@@ -8,6 +8,10 @@ services:
       - ../../:/app
       - ../../node_modules:/app/node_modules
       - ../../dist:/app/dist
+      - ../../dev_volumes/files:/var/lib/app/files
     command: bash -c "npm i --quiet --ignore-scripts && npm run start:dev"
     ports:
       - "8080:8080"
+
+volumes:
+  files:

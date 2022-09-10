@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  app:
+    build: ../../
+    volumes:
+      - files:/var/lib/app/files
+    ports:
+      - "8080:8080"
+
+volumes:
+  files:

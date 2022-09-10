@@ -5,17 +5,31 @@ SHELL := /bin/bash
 help:
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-up: ## Run a local development environment with Docker Compose.
+up-dev: ## Run a local development environment with Docker Compose.
+	@mkdir -p dev_volumes/files
 	@docker-compose -f ./deployments/dev/docker-compose.yml up --build --force-recreate
 
-recreate: ## Recreate and run development docker compose
+recreate-dev: ## Recreate and run development docker compose
 	@docker-compose -f ./deployments/dev/docker-compose.yml up --build --force-recreate
 
-down: ## Stop Docker Compose local development environment.
+down-dev: ## Stop Docker Compose local development environment.
 	@docker-compose -f ./deployments/dev/docker-compose.yml down
 
-clean: ## Clean Docker Compose local development environment.
+clean-dev: ## Clean Docker Compose local development environment.
+	@rm -r dev_volumes/files
 	@docker-compose -f ./deployments/dev/docker-compose.yml down --remove-orphans --volumes
+
+up-prod: ## Run a local prod environment with Docker Compose.
+	@docker-compose -f ./deployments/prod/docker-compose.yml up --build --force-recreate
+
+recreate-prod: ## Recreate and run prod docker compose
+	@docker-compose -f ./deployments/prod/docker-compose.yml up --build --force-recreate
+
+down-prod: ## Stop Docker Compose local prod environment.
+	@docker-compose -f ./deployments/prod/docker-compose.yml down
+
+clean-prod: ## Clean Docker Compose local prod environment.
+	@docker-compose -f ./deployments/prod/docker-compose.yml down --remove-orphans --volumes
 
 .PHONY: test
 test: ## Run tests
