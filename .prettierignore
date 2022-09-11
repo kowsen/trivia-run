@@ -8,7 +8,5 @@ out
 temp
 
 *.yml
-*.html
 *.md
-*.json
 *.d.ts
