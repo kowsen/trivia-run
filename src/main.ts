@@ -1,46 +1,55 @@
-#!/usr/bin/env node
+import express from 'express';
+import fileUpload from 'express-fileupload';
+import path from 'path';
+import AdmZip from 'adm-zip';
+import { v4 as uuidv4 } from 'uuid';
+import { html } from './upload-ui.js';
 
-/**
- * This is a sample HTTP server.
- * Replace this with your implementation.
- */
+const PORT = 8080;
+const FILES_PATH = '/var/lib/app/files';
 
-import 'dotenv/config'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
-import { resolve } from 'path'
-import { fileURLToPath } from 'url'
-import { Config } from './config.js'
-import fs from 'fs'
-import path from 'path'
+const app = express();
 
-const nodePath = resolve(process.argv[1])
-const modulePath = resolve(fileURLToPath(import.meta.url))
-const isCLI = nodePath === modulePath
+app.use(fileUpload());
 
-let counter = 20
+app.use('/files', express.static(FILES_PATH));
 
-export default function main(port: number = Config.port) {
-  const requestListener = (request: IncomingMessage, response: ServerResponse) => {
-    const p = path.join('/var/lib/app/files', `${counter}.txt`)
-    counter += 1
-    fs.writeFileSync(p, 'test')
-    const dir = fs.readdirSync('/var/lib/app/files')
-    response.setHeader('content-type', 'text/plain;charset=utf8')
-    response.writeHead(200, 'OK')
-    response.end(`Olá, Hola, Hello! ${dir.join(',')}`)
+app.get('/', (req, res) => {
+  res.send(html);
+});
+
+app.post('/add', (req, res) => {
+  if (!req.files || !req.files.upload) {
+    res.status(400).send('No file was uploaded.');
+    return;
   }
 
-  const server = createServer(requestListener)
-
-  if (isCLI) {
-    server.listen(port)
-    // eslint-disable-next-line no-console
-    console.log(`Listening on port: ${port}`)
+  if (req.files.upload instanceof Array) {
+    res.status(400).send('Only supports single file upload.');
+    return;
   }
 
-  return server
-}
+  const file = req.files.upload;
+  const fileId = uuidv4();
 
-if (isCLI) {
-  main()
-}
+  if (file.mimetype === 'application/zip') {
+    const zip = new AdmZip(file.data);
+    zip.extractAllTo(path.join(FILES_PATH, fileId));
+    res.send({ status: 'success', path: fileId });
+  } else {
+    const extension = path.parse(file.name).ext;
+    const fileName = `${fileId}${extension}`;
+    const filePath = path.join(FILES_PATH, fileName);
+    file.mv(filePath, err => {
+      if (err) {
+        res.status(500).send(err);
+      } else {
+        res.send({ status: 'success', path: fileName });
+      }
+    });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Storage server listening on port ${PORT}`);
+});
