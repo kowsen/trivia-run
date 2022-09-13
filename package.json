@@ -1,0 +1,9 @@
+{
+  "name": "trivia-shared",
+  "workspaces": [
+    "shared/trivia-shared-auth"
+  ],
+  "scripts": {
+    "build-all": "npm run build --ws"
+  }
+}
