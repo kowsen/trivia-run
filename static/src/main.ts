@@ -4,12 +4,9 @@ import path from 'path';
 import AdmZip from 'adm-zip';
 import { v4 as uuidv4 } from 'uuid';
 import { html } from './upload-ui.js';
-import { authMiddleware } from './auth.js';
-import { KYLE_WAS_HERE } from 'trivia-shared-auth/dist/index.js';
+import { authMiddleware } from 'trivia-shared-auth/dist/index.js';
 
 const FILES_PATH = '/var/lib/app/files';
-
-console.log(KYLE_WAS_HERE.kyle);
 
 const app = express();
 
