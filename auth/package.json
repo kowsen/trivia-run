@@ -1,5 +1,5 @@
 {
-  "name": "trivia-static",
+  "name": "trivia-auth",
   "type": "module",
   "main": "dist/main.js",
   "types": "dist/main.d.ts",

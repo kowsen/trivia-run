@@ -4,8 +4,8 @@ import path from 'path';
 import AdmZip from 'adm-zip';
 import { v4 as uuidv4 } from 'uuid';
 import { html } from './upload-ui.js';
+import { authMiddleware } from './auth.js';
 
-const PORT = 8080;
 const FILES_PATH = '/var/lib/app/files';
 
 const app = express();
@@ -14,11 +14,11 @@ app.use(fileUpload());
 
 app.use('/files', express.static(FILES_PATH));
 
-app.get('/', (req, res) => {
+app.get('/', authMiddleware, async (req, res) => {
   res.send(html);
 });
 
-app.post('/add', (req, res) => {
+app.post('/add', authMiddleware, (req, res) => {
   if (!req.files || !req.files.upload) {
     res.status(400).send('No file was uploaded.');
     return;
@@ -50,6 +50,6 @@ app.post('/add', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Storage server listening on port ${PORT}`);
+app.listen(80, () => {
+  console.log(`Storage server listening on port 80`);
 });

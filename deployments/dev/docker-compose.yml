@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  auth:
+    extends:
+      file: ../../auth/deployments/dev/docker-compose.yml
+      service: auth
+  static:
+    extends:
+      file: ../../static/deployments/dev/docker-compose.yml
+      service: static
