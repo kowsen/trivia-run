@@ -13,3 +13,7 @@ services:
     extends:
       file: ../../backend/deployments/dev/docker-compose.yml
       service: backend
+  admin_panel:
+    extends:
+      file: ../../admin_panel/deployments/dev/docker-compose.yml
+      service: admin_panel

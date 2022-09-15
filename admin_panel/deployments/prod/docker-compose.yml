@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  admin_panel:
+    build:
+      context: ../../../
+      dockerfile: ./admin_panel/Dockerfile
+    ports:
+      - "8083:80"

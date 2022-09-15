@@ -1,13 +1,13 @@
 import io, { Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 import {
-  Messages,
-  Payload,
+  type Messages,
+  type Payload,
   payloadValidator,
-  Responses,
+  type Responses,
   responseValidators,
   timeoutResponses,
-} from "./socket_interface.js";
+} from "trivia-ws/dist/socket_interface.js";
 
 const REQUEST_TIMEOUT = 5000;
 
@@ -82,7 +82,7 @@ export class ClientSocket {
 
       console.log("SENDING REQ", message, token);
 
-      this.socket.send("game_req", {
+      this.socket.emit("game_req", {
         kind: event,
         token,
         message,

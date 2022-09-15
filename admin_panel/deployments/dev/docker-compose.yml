@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  admin_panel:
+    image: node:16.14.2
+    working_dir: /opt/app
+    volumes:
+      - ../../:/opt/app
+      - ../../node_modules:/opt/app/node_modules
+      - ../../../shared:/opt/node_modules
+      - ../../dist:/opt/app/dist
+    command: bash -c "npm i --quiet --ignore-scripts && npm run dev"
+    ports:
+      - "8083:80"

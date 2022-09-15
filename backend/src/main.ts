@@ -1,7 +1,12 @@
 import { Server } from 'socket.io';
-import { ServerSocket } from 'trivia-ws/dist/server_socket';
+import { ServerSocket } from './server_socket';
 
-const server = new Server();
+const server = new Server({
+  cors: {
+    origin: 'http://localhost:8083',
+    methods: ['GET', 'POST'],
+  },
+});
 
 // Move handlers out here and pass them in.
 new ServerSocket(server);
