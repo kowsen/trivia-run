@@ -9,6 +9,10 @@ services:
     extends:
       file: ../../static/deployments/prod/docker-compose.yml
       service: static
+  backend:
+    extends:
+      file: ../../backend/deployments/prod/docker-compose.yml
+      service: backend
 
 volumes:
   files:

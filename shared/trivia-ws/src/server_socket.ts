@@ -1,12 +1,12 @@
 import { Server } from "socket.io";
-import { ConnectionInfo, serverHandlers, ServerInfo } from "./server_info";
+import { ConnectionInfo, serverHandlers, ServerInfo } from "./server_info.js";
 import {
   Messages,
   messageValidators,
   Payload,
   payloadValidator,
   Responses,
-} from "./socket_interface";
+} from "./socket_interface.js";
 
 export class ServerSocket {
   private readonly connections = new Map<string, ConnectionInfo>();

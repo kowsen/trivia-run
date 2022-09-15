@@ -1,5 +1,5 @@
-import { Guess2Message, Guess2Response } from "src/messages/guess2";
-import { ServerInfo } from "src/server_info";
+import { Guess2Message, Guess2Response } from "src/messages/guess2.js";
+import { ServerInfo } from "src/server_info.js";
 
 export const guess2Handler = async (
   guess: Guess2Message,

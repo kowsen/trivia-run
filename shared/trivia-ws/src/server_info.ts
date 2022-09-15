@@ -1,6 +1,6 @@
-import { guessHandler } from "./handlers/guess";
-import { guess2Handler } from "./handlers/guess2";
-import { Messages, Responses } from "./socket_interface";
+import { guessHandler } from "./handlers/guess.js";
+import { guess2Handler } from "./handlers/guess2.js";
+import { Messages, Responses } from "./socket_interface.js";
 
 export interface ConnectionInfo {
   teamId?: string;
