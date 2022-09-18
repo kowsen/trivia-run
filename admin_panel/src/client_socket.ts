@@ -8,15 +8,47 @@ import {
   responseValidators,
   timeoutResponses,
 } from "trivia-ws/dist/socket_interface.js";
+import { Builder, type Patch } from "trivia-ws/dist/builder.js";
+import { initialStateObjects, type StateObjects } from "./state_objects";
 
 const REQUEST_TIMEOUT = 5000;
 
 console.log("BASE MESSAGE TEST");
 
+class StateSubscription<TObject extends object> {
+  private readonly subscriptions: Array<(data: TObject) => void> = [];
+  private readonly builder: Builder<TObject>;
+
+  constructor(initialData: TObject) {
+    this.builder = new Builder(initialData);
+  }
+
+  public patch(patch: Patch<TObject>) {
+    const newData = this.builder.patch(patch);
+    for (const subscription of this.subscriptions) {
+      subscription(newData);
+    }
+  }
+
+  public subscribe(callback: (data: TObject) => void): () => void {
+    this.subscriptions.push(callback);
+    return () => {
+      const index = this.subscriptions.indexOf(callback);
+      if (index !== -1) {
+        this.subscriptions.splice(index, 1);
+      }
+    };
+  }
+}
+
 export class ClientSocket {
   private readonly socket: Socket;
 
   private readonly pendingRequests = new Map<string, (response: any) => void>();
+
+  private readonly stateSubscriptions: Partial<
+    Record<keyof StateObjects, StateSubscription<object>>
+  > = {};
 
   readonly isSocketReady: Promise<void>;
 
@@ -92,5 +124,20 @@ export class ClientSocket {
     });
 
     return response;
+  }
+
+  public sync<TStateObject extends keyof StateObjects>(
+    state: TStateObject
+  ): StateSubscription<StateObjects[TStateObject]> {
+    let subscription = this.stateSubscriptions[state] as
+      | StateSubscription<StateObjects[TStateObject]>
+      | undefined;
+    if (!subscription) {
+      subscription = new StateSubscription<StateObjects[TStateObject]>(
+        initialStateObjects[state]
+      );
+    }
+    // Tell server to start sending updates
+    return subscription;
   }
 }
