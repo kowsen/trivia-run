@@ -16,20 +16,9 @@ RUN npm install --omit optional
 COPY admin_panel .
 COPY --from=lib-builder /opt/app /opt/node_modules
 RUN npm run build
-RUN rm -rf node_modules && npm i --production --ignore-scripts
 
 # Run Stage
 # ---
-FROM gcr.io/distroless/nodejs:16
+FROM nginx
 
-USER nobody
-
-COPY --chown=nobody --from=lib-builder /opt/app /opt/node_modules
-COPY --chown=nobody --from=builder /opt/app /opt/app
-WORKDIR /opt/app
-
-ARG NODE_ENV=production
-ENV NODE_ENV $NODE_ENV
-ENV PATH /opt/node_app/node_modules/.bin:$PATH
-
-CMD ["dist/main.js"]
+COPY --from=builder /opt/app/dist /usr/share/nginx/html
