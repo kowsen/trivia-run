@@ -1,4 +1,4 @@
-import { validate, Validator } from "./validator";
+import { validate, Validator } from "./validator.js";
 
 export class RPC<TParams extends object, TResult extends object> {
   constructor(

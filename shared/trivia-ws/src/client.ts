@@ -1,7 +1,7 @@
-import { Action } from "redux-actions";
+import { Action, BaseAction } from "redux-actions";
 import { Client as WebSocketClient } from "rpc-websockets";
-import { RPC } from "./rpc";
-import { stringField, unknownField, validate } from "./validator";
+import { RPC } from "./rpc.js";
+import { stringField, unknownField, validate } from "./validator.js";
 
 class InvalidResultError extends Error {
   constructor(message: string) {
@@ -23,23 +23,31 @@ export class GameClient<TGameState> {
 
   constructor(
     path: string,
-    reducer: (prevState?: TGameState, action?: Action<unknown>) => TGameState
+    reducer: (
+      prevState: TGameState | undefined,
+      action: Action<unknown> | BaseAction
+    ) => TGameState
   ) {
-    this.client = new WebSocketClient(path);
-    this.openPromise = new Promise((resolve) => {
-      this.client.on("open", resolve);
-    });
-    this.state = reducer();
-    this.client.subscribe("action");
+    this.state = reducer(undefined, { type: "INITIALIZE_REDUCER_ACTION" });
 
-    this.client.on("action", (action: unknown) => {
-      if (!validate(action, actionValidator)) {
-        throw new Error("Received invalid action message");
-      }
-      this.state = reducer(this.state, action);
-      for (const listener of this.stateListeners) {
-        listener(this.state);
-      }
+    this.client = new WebSocketClient(path);
+
+    this.openPromise = new Promise((resolve) => {
+      this.client.on("open", () => {
+        this.client.subscribe("action");
+
+        this.client.on("action", (action: unknown) => {
+          if (!validate(action, actionValidator)) {
+            throw new Error("Received invalid action message");
+          }
+          this.state = reducer(this.state, action);
+          for (const listener of this.stateListeners) {
+            listener(this.state);
+          }
+        });
+
+        resolve();
+      });
     });
   }
 

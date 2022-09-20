@@ -1,15 +1,18 @@
-import { Server } from 'socket.io';
-import { ServerSocket } from './server_socket';
+import { GameServer } from 'trivia-ws/dist/server.js';
+import { RPC } from 'trivia-ws/dist/rpc.js';
+import { stringField, booleanField } from 'trivia-ws/dist/validator.js';
 
-const server = new Server({
-  cors: {
-    origin: 'http://localhost:8083',
-    methods: ['GET', 'POST'],
-  },
+const server = new GameServer({
+  port: 80,
+  createSession: socketId => ({ socketId }),
+  dataAdapter: {},
 });
 
-// Move handlers out here and pass them in.
-new ServerSocket(server);
+const testRpc = new RPC('guess', { value: stringField }, { isCorrect: booleanField });
 
-server.listen(80);
+server.register(testRpc, (params, session, data, dispatch) => {
+  dispatch(other => (other === session ? { type: 'guess/guess', payload: { guess: params.value } } : undefined));
+  return Promise.resolve({ isCorrect: params.value === 'kyle' });
+});
+
 console.log('Backend listening on port 80');

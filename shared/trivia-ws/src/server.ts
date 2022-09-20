@@ -1,14 +1,14 @@
 import { Server as WebSocketServer } from "rpc-websockets";
 import { WebSocket } from "ws";
 import { BaseAction } from "redux-actions";
-import { RPC } from "./rpc";
+import { RPC } from "./rpc.js";
 
 // 15 minutes
 const SESSION_CLEANUP_INTERVAL = 1000 * 60 * 15;
 
 export interface GameServerConfig<TSession, TDataAdapter> {
   port: number;
-  host: string;
+  host?: string;
   createSession: (socketId: string) => TSession;
   dataAdapter: TDataAdapter;
 }
@@ -45,7 +45,7 @@ export class GameServer<TSession, TDataAdapter> {
       dispatch: (
         buildAction: (session: TSession) => BaseAction | undefined
       ) => void
-    ) => Promise<TResult>
+    ) => TResult | Promise<TResult>
   ) {
     if (this.registeredMethods.includes(rpc.method)) {
       throw new Error(
@@ -60,7 +60,7 @@ export class GameServer<TSession, TDataAdapter> {
       for (const [id, socket] of this.sockets.entries()) {
         const action = buildAction(this.getSession(id));
         if (action) {
-          socket.emit(
+          socket.send(
             JSON.stringify({
               notification: "action",
               params: action,

@@ -1,17 +1,37 @@
 <script lang="ts">
   import svelteLogo from './assets/svelte.svg'
   import Counter from './lib/Counter.svelte'
-  import { ClientSocket } from "./client_socket";
+  import { GameClient } from 'trivia-ws/dist/client.js';
+  import { RPC } from 'trivia-ws/dist/rpc.js';
+  import { stringField, booleanField } from 'trivia-ws/dist/validator.js';
+  import { createSlice } from '@reduxjs/toolkit'
+  import type { PayloadAction } from '@reduxjs/toolkit'
+
+  interface GameState {
+    lastGuess: string;
+  }
+
+  const initialState: GameState = { lastGuess: "" };
+
+  const guessSlice = createSlice({
+    name: 'guess',
+    initialState,
+    reducers: {
+      guess(state, action: PayloadAction<{guess: string}>) {
+        state.lastGuess = action.payload.guess
+      },
+    },
+  })
+
+  const client = new GameClient("ws://localhost:8082", guessSlice.reducer);
+
+  const testRpc = new RPC('guess', { value: stringField }, { isCorrect: booleanField });
 
   let guess: string = "";
   let result: boolean = false;
 
-  const socket = new ClientSocket("http://localhost:8082");
-
   async function sendGuess() {
-    console.log("START REQUEST")
-    const response = await socket.send("guess", {text: guess});
-    console.log("END REQUEST")
+    const response = await client.call(testRpc, {value: guess});
     result = response.isCorrect;
   }
 </script>
@@ -33,6 +53,7 @@
 
   <input type="text" bind:value={guess} />
   <p>Correct: {result}</p>
+  <p>LAST: {($client).lastGuess}</p>
   <button on:click={sendGuess}>Send</button>
 
   <p>

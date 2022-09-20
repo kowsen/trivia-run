@@ -1,40 +1,43 @@
-export type ValidatorMap<TObject extends object> = {
+export type Validator<TObject> = {
   [Property in keyof TObject]: (value: unknown) => TObject[Property];
 };
 
-export class Validator<TObject extends object> {
-  constructor(private readonly validators: ValidatorMap<TObject>) {}
+export function validate<TObject>(
+  value: unknown,
+  validator: Validator<TObject>
+): value is TObject {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
 
-  public validate(value: unknown): value is TObject {
-    if (!value || typeof value !== "object") {
-      return false;
+  const indexableValue = value as { [key: string]: unknown };
+
+  try {
+    for (const [key, untypedValidator] of Object.entries(validator)) {
+      const validator = untypedValidator as (value: unknown) => unknown;
+      validator(indexableValue[key]);
     }
-
-    const indexableValue = value as { [key: string]: unknown };
-
-    try {
-      for (const [key, untypedValidator] of Object.entries(this.validators)) {
-        const validator = untypedValidator as (value: unknown) => unknown;
-        validator(indexableValue[key]);
-      }
-      return true;
-    } catch (e) {
-      console.log("Failed to validate value", value, e);
-      return false;
-    }
+    return true;
+  } catch (e) {
+    console.log("Failed to validate value", value, e);
+    return false;
   }
 }
 
-export function stringValidator(value: unknown): string {
+export function stringField(value: unknown): string {
   if (typeof value !== "string") {
     throw new Error(`${value} should be a string.`);
   }
   return value;
 }
 
-export function booleanValidator(value: unknown): boolean {
+export function booleanField(value: unknown): boolean {
   if (typeof value !== "boolean") {
     throw new Error(`${value} should be a boolean.`);
   }
+  return value;
+}
+
+export function unknownField(value: unknown): unknown {
   return value;
 }
