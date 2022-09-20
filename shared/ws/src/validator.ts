@@ -37,3 +37,7 @@ export function booleanField(value: unknown): boolean {
   }
   return value;
 }
+
+export function unknownField(value: unknown): unknown {
+  return value;
+}

@@ -8,12 +8,14 @@
     "format:check": "prettier \"./**\" --ignore-unknown --check"
   },
   "dependencies": {
+    "redux-actions": "^2.6.5",
     "rpc-websockets": "^7.5.0",
     "tslib": "^2.3.1",
     "ws": "^8.8.1"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
+    "@types/redux-actions": "^2.6.2",
     "@types/ws": "^8.5.3",
     "prettier": "^2.6.1",
     "ts-node": "^10.7.0",

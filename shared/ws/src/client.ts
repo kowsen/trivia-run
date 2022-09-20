@@ -1,5 +1,7 @@
+import { Action } from "redux-actions";
 import { Client as WebSocketClient } from "rpc-websockets";
 import { RPC } from "./rpc";
+import { stringField, unknownField, validate } from "./validator";
 
 class InvalidResultError extends Error {
   constructor(message: string) {
@@ -8,14 +10,36 @@ class InvalidResultError extends Error {
   }
 }
 
-export class GameClient {
+const actionValidator = {
+  type: stringField,
+  payload: unknownField,
+};
+
+export class GameClient<TGameState> {
   private readonly client: WebSocketClient;
   private readonly openPromise: Promise<void>;
+  private state: TGameState;
+  private readonly stateListeners: Array<(state: TGameState) => void> = [];
 
-  constructor(path: string) {
+  constructor(
+    path: string,
+    reducer: (prevState?: TGameState, action?: Action<unknown>) => TGameState
+  ) {
     this.client = new WebSocketClient(path);
     this.openPromise = new Promise((resolve) => {
       this.client.on("open", resolve);
+    });
+    this.state = reducer();
+    this.client.subscribe("action");
+
+    this.client.on("action", (action: unknown) => {
+      if (!validate(action, actionValidator)) {
+        throw new Error("Received invalid action message");
+      }
+      this.state = reducer(this.state, action);
+      for (const listener of this.stateListeners) {
+        listener(this.state);
+      }
     });
   }
 
@@ -32,5 +56,16 @@ export class GameClient {
     }
 
     return result;
+  }
+
+  public subscribe(listener: (state: TGameState) => void): () => void {
+    this.stateListeners.push(listener);
+    listener(this.state);
+    return () => {
+      const index = this.stateListeners.indexOf(listener);
+      if (index !== -1) {
+        this.stateListeners.splice(index, 1);
+      }
+    };
   }
 }
