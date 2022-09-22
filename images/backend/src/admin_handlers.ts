@@ -1,8 +1,15 @@
 import { Db } from 'mongodb';
 import { GameServer } from 'game-socket/dist/lib/server.js';
 import { upgradeToAdmin, upsertQuestion, deleteQuestion } from 'game-socket/dist/trivia/admin_rpcs.js';
-import { actions } from 'game-socket/dist/trivia/admin_state';
-import { Session } from './session.js';
+import {
+  actions,
+  InitialAdminState,
+  AdminQuestion,
+  AdminTeam,
+  AdminGuess,
+  QuestionOrder,
+} from 'game-socket/dist/trivia/admin_state.js';
+import { BaseBonusQuestionInfo } from 'game-socket/dist/trivia/base.js';
 
 interface Config {
   adminPassword: string;
@@ -10,39 +17,47 @@ interface Config {
 
 const DEFAULT_CONFIG: Config = { adminPassword: 'password' };
 
-function checkAdmin(session: Session) {
-  if (!session.isAdmin) {
-    throw new Error('Must be Admin');
-  }
-}
-
-export function setupAdminHandlers(server: GameServer<Session, Db>) {
-  server.register(upgradeToAdmin, async (params, session, dataAdapter, dispatch) => {
-    const document = await dataAdapter.collection('config').findOne<Config>();
+export function setupAdminHandlers(server: GameServer<Db>) {
+  server.register(upgradeToAdmin, async (params, socket, database, server) => {
+    const document = await database.collection('config').findOne<Config>();
     const adminPassword = (document ?? DEFAULT_CONFIG).adminPassword;
     const success = params.password === adminPassword;
-    session.isAdmin = success;
-    // Build initial state
-    dispatch(other => {
-      if (other === session) {
-        // send initial state
-      }
-      return undefined;
-    });
+    if (success) {
+      socket.join('admin');
+      const initialState: InitialAdminState = {
+        questions: await database.collection('questions').find<AdminQuestion>({}).toArray(),
+        bonusQuestionInfo: await database.collection('bonusQuestionInfo').find<BaseBonusQuestionInfo>({}).toArray(),
+        teams: await database.collection('teams').find<AdminTeam>({}).toArray(),
+        guesses: await database.collection('guesses').find<AdminGuess>({}).toArray(),
+        order: (await database.collection('order').findOne<QuestionOrder>()) ?? {
+          mainQuestions: [],
+          bonusQuestions: [],
+        },
+      };
+      socket.emit('action', initialState);
+    }
     return { success };
   });
 
-  server.register(upsertQuestion, async (params, session, dataAdapter, dispatch) => {
-    checkAdmin(session);
-    await dataAdapter.collection('questions').updateOne({ id: params.id }, params, { upsert: true });
-    dispatch(session => (session.isAdmin ? actions.upsertQuestion(params) : undefined));
+  const registerProtected: typeof server.register = (rpc, handler) => {
+    const protectedHandler: typeof handler = (params, socket, database, server) => {
+      if (!socket.rooms.has('admin')) {
+        throw new Error('Not authenticated');
+      }
+      return handler(params, socket, database, server);
+    };
+    server.register(rpc, protectedHandler);
+  };
+
+  registerProtected(upsertQuestion, async (params, socket, database, server) => {
+    await database.collection('questions').updateOne({ id: params.id }, params, { upsert: true });
+    server.to('admin').emit('action', actions.upsertQuestion(params));
     return { success: true };
   });
 
-  server.register(deleteQuestion, async (params, session, dataAdapter, dispatch) => {
-    checkAdmin(session);
+  registerProtected(deleteQuestion, async (params, socket, dataAdapter, server) => {
     await dataAdapter.collection('questions').deleteOne({ id: params.id });
-    dispatch(session => (session.isAdmin ? actions.deleteQuestion(params) : undefined));
+    server.to('admin').emit('action', actions.deleteQuestion(params));
     return { success: true };
   });
 }

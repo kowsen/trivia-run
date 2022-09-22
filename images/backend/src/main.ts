@@ -1,6 +1,5 @@
 import { MongoClient, Db } from 'mongodb';
 import { GameServer } from 'game-socket/dist/lib/server.js';
-import { Session } from './session.js';
 import { setupAdminHandlers } from './admin_handlers.js';
 
 async function main() {
@@ -10,9 +9,8 @@ async function main() {
 
   const db = client.db('trivia');
 
-  const server = new GameServer<Session, Db>({
+  const server = new GameServer<Db>({
     port: 80,
-    createSession: socketId => ({ socketId, isAdmin: false }),
     dataAdapter: db,
   });
 
