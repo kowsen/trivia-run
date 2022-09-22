@@ -9,6 +9,7 @@
     "format:check": "prettier \"./**\" --ignore-unknown --check"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^1.8.5",
     "redux-actions": "^2.6.5",
     "rpc-websockets": "^7.5.0",
     "tslib": "^2.3.1",

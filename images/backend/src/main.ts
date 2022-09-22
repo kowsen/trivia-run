@@ -1,18 +1,24 @@
+import { MongoClient, Db } from 'mongodb';
 import { GameServer } from 'game-socket/dist/lib/server.js';
-import { RPC } from 'game-socket/dist/lib/rpc.js';
-import { stringField, booleanField } from 'game-socket/dist/lib/validator.js';
+import { Session } from './session.js';
+import { setupAdminHandlers } from './admin_handlers.js';
 
-const server = new GameServer({
-  port: 80,
-  createSession: socketId => ({ socketId }),
-  dataAdapter: {},
-});
+async function main() {
+  const client = new MongoClient('mongodb://mongo:27017');
 
-const testRpc = new RPC('guess', { value: stringField }, { isCorrect: booleanField });
+  await client.connect();
 
-server.register(testRpc, (params, session, data, dispatch) => {
-  dispatch(other => (other === session ? { type: 'guess/guess', payload: { guess: params.value } } : undefined));
-  return Promise.resolve({ isCorrect: params.value === 'kyle' });
-});
+  const db = client.db('trivia');
 
-console.log('Backend listening on port 80');
+  const server = new GameServer<Session, Db>({
+    port: 80,
+    createSession: socketId => ({ socketId, isAdmin: false }),
+    dataAdapter: db,
+  });
+
+  setupAdminHandlers(server);
+
+  console.log('Backend listening on port 80');
+}
+
+main();

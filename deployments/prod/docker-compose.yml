@@ -5,6 +5,10 @@ services:
     extends:
       file: ../../images/static/deployments/prod/docker-compose.yml
       service: static
+  mongo:
+    extends:
+      file: ../../images/backend/deployments/prod/docker-compose.yml
+      service: mongo
   backend:
     extends:
       file: ../../images/backend/deployments/prod/docker-compose.yml
@@ -16,3 +20,4 @@ services:
 
 volumes:
   files:
+  database:

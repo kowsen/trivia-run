@@ -1,6 +1,11 @@
 version: '3.8'
 
 services:
+  mongo:
+    image: mongo
+    restart: always
+    volumes:
+      - ../../../../dev_volumes/database:/data/db
   backend:
     image: node:16.14.2
     working_dir: /opt/app
