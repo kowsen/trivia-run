@@ -1,21 +1,17 @@
 version: "3.8"
 
 services:
-  auth:
-    extends:
-      file: ../../auth/deployments/prod/docker-compose.yml
-      service: auth
   static:
     extends:
-      file: ../../static/deployments/prod/docker-compose.yml
+      file: ../../images/static/deployments/prod/docker-compose.yml
       service: static
   backend:
     extends:
-      file: ../../backend/deployments/prod/docker-compose.yml
+      file: ../../images/backend/deployments/prod/docker-compose.yml
       service: backend
   admin_panel:
     extends:
-      file: ../../admin_panel/deployments/prod/docker-compose.yml
+      file: ../../images/admin_panel/deployments/prod/docker-compose.yml
       service: admin_panel
 
 volumes:

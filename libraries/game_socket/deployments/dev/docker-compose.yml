@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  build_game_socket:
+    image: node:16.14.2
+    working_dir: /opt/app
+    volumes:
+      - ../../:/opt/app
+      - ../../node_modules:/opt/app/node_modules
+      - ../../dist:/opt/app/dist
+    command: bash -c "npm i --quiet --ignore-scripts && npm run watch"

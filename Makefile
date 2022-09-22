@@ -20,6 +20,8 @@ clean-dev: ## Clean Docker Compose local development environment.
 	@docker-compose -f ./deployments/dev/docker-compose.yml down --remove-orphans --volumes
 
 up-prod: ## Run a local prod environment with Docker Compose.
+	@images/admin_panel/copy_deps.sh
+	@images/backend/copy_deps.sh
 	@docker-compose -f ./deployments/prod/docker-compose.yml up --build --force-recreate
 
 recreate-prod: ## Recreate and run prod docker compose

@@ -1,19 +1,19 @@
 version: "3.8"
 
 services:
-  auth:
+  build_game_socket:
     extends:
-      file: ../../auth/deployments/dev/docker-compose.yml
-      service: auth
+      file: ../../libraries/game_socket/deployments/dev/docker-compose.yml
+      service: build_game_socket
   static:
     extends:
-      file: ../../static/deployments/dev/docker-compose.yml
+      file: ../../images/static/deployments/dev/docker-compose.yml
       service: static
   backend:
     extends:
-      file: ../../backend/deployments/dev/docker-compose.yml
+      file: ../../images/backend/deployments/dev/docker-compose.yml
       service: backend
   admin_panel:
     extends:
-      file: ../../admin_panel/deployments/dev/docker-compose.yml
+      file: ../../images/admin_panel/deployments/dev/docker-compose.yml
       service: admin_panel
