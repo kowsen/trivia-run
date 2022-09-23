@@ -1,13 +1,27 @@
-import { BaseBonusQuestionInfo, BaseGuess, BaseQuestion, BaseTeam } from './base.js';
+import { Doc } from './base.js';
 
-export interface GameQuestion extends BaseQuestion {
-  guesses: BaseGuess[];
+export interface GameQuestion extends Doc {
+  title: string;
+  text?: string;
+  image?: string;
+  frame?: string;
+  hideAnswer?: boolean;
 }
 
-export interface GameBonusQuestionInfo extends BaseBonusQuestionInfo {
-  isComplete: boolean;
+export interface GameBonusInfo extends Doc {
+  unlockTime: number;
+  firstCompletedBy?: string;
 }
 
-export interface GameTeam extends BaseTeam {
-  isYou?: boolean;
+export interface GameTeam extends Doc {
+  name: string;
+  completedBonusQuestions: string[];
+  mainQuestionIndex: number;
+  isSecretTeam?: boolean;
+}
+
+export interface GameGuess extends Doc {
+  questionId: string;
+  text: string;
+  isCorrect: boolean;
 }

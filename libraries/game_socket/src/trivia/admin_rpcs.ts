@@ -1,7 +1,8 @@
+import { v4 as uuid } from 'uuid';
 import { RPC } from '../lib/rpc.js';
 import { arrayOf, booleanField, numberField, optional, stringField } from '../lib/validator.js';
-import { AdminGuess, AdminQuestion, AdminTeam, QuestionOrder } from './admin_state.js';
-import { BaseBonusQuestionInfo, StatusResponse } from './base.js';
+import { AdminBonusInfo, AdminGuess, AdminQuestion, AdminQuestionOrder, AdminTeam } from './admin_state.js';
+import { Doc, StatusResponse } from './base.js';
 
 export interface AdminUpgradeRequest {
   password: string;
@@ -29,10 +30,18 @@ export const upgradeToAdmin = new RPC<AdminUpgradeRequest, StatusResponse>(
   },
 );
 
-export const upsertQuestion = new RPC<AdminQuestion, StatusResponse>(
+export type AdminRequestDoc<TDoc extends Doc> = Omit<TDoc, keyof Doc> & Partial<Doc>;
+
+const requestDocValidator = {
+  _id: optional(stringField),
+  _modified: optional(numberField),
+  _deleted: optional(booleanField),
+};
+
+export const upsertQuestion = new RPC<AdminRequestDoc<AdminQuestion>, StatusResponse>(
   'upsertQuestion',
   {
-    id: stringField,
+    ...requestDocValidator,
     title: stringField,
     answer: stringField,
     text: optional(stringField),
@@ -45,20 +54,10 @@ export const upsertQuestion = new RPC<AdminQuestion, StatusResponse>(
   },
 );
 
-export const deleteQuestion = new RPC<Pick<AdminQuestion, 'id'>, StatusResponse>(
-  'deleteQuestion',
+export const upsertBonusInfo = new RPC<AdminRequestDoc<AdminBonusInfo>, StatusResponse>(
+  'upsertBonusInfo',
   {
-    id: stringField,
-  },
-  {
-    success: booleanField,
-  },
-);
-
-export const upsertBonusQuestionInfo = new RPC<BaseBonusQuestionInfo, StatusResponse>(
-  'upsertBonusQuestionInfo',
-  {
-    questionId: stringField,
+    ...requestDocValidator,
     unlockTime: numberField,
     firstCompletedBy: optional(stringField),
   },
@@ -67,20 +66,10 @@ export const upsertBonusQuestionInfo = new RPC<BaseBonusQuestionInfo, StatusResp
   },
 );
 
-export const deleteBonusQuestionInfo = new RPC<Pick<BaseBonusQuestionInfo, 'questionId'>, StatusResponse>(
-  'deleteBonusQuestionInfo',
-  {
-    questionId: stringField,
-  },
-  {
-    success: booleanField,
-  },
-);
-
-export const upsertTeam = new RPC<AdminTeam, StatusResponse>(
+export const upsertTeam = new RPC<AdminRequestDoc<AdminTeam>, StatusResponse>(
   'upsertTeam',
   {
-    id: stringField,
+    ...requestDocValidator,
     name: stringField,
     mainQuestionIndex: numberField,
     completedBonusQuestions: arrayOf(stringField),
@@ -91,40 +80,26 @@ export const upsertTeam = new RPC<AdminTeam, StatusResponse>(
   },
 );
 
-export const deleteTeam = new RPC<Pick<AdminTeam, 'id'>, StatusResponse>(
-  'deleteTeam',
+export const upsertGuess = new RPC<AdminRequestDoc<AdminGuess>, StatusResponse>(
+  'upsertGuess',
   {
-    id: stringField,
+    ...requestDocValidator,
+    text: stringField,
+    teamId: stringField,
+    questionId: stringField,
+    isCorrect: booleanField,
   },
   {
     success: booleanField,
   },
 );
 
-export const deleteGuess = new RPC<Pick<AdminGuess, 'id'>, StatusResponse>(
-  'deleteGuess',
-  {
-    id: stringField,
-  },
-  {
-    success: booleanField,
-  },
-);
-
-export const setMainQuestionOrder = new RPC<Pick<QuestionOrder, 'mainQuestions'>, StatusResponse>(
+export const patchOrder = new RPC<Partial<AdminQuestionOrder>, StatusResponse>(
   'setMainQuestionOrder',
   {
-    mainQuestions: arrayOf(stringField),
-  },
-  {
-    success: booleanField,
-  },
-);
-
-export const setBonusQuestionOrder = new RPC<Pick<QuestionOrder, 'bonusQuestions'>, StatusResponse>(
-  'setBonusQuestionOrder',
-  {
-    bonusQuestions: arrayOf(stringField),
+    ...requestDocValidator,
+    mainQuestions: optional(arrayOf(stringField)),
+    bonusQuestions: optional(arrayOf(stringField)),
   },
   {
     success: booleanField,
