@@ -95,6 +95,8 @@ export function setupAdminHandlers(server: GameServer<Db>) {
     };
     await questionsCollection(db).replaceOne({ _id: question._id }, question, { upsert: true });
     server.to('admin').emit('action', updateAdminState({ questions: [question] }));
+    // Strip and send game question.
+    server.to(`question_${question._id}`).emit('action', {});
     return { success: true };
   });
 
