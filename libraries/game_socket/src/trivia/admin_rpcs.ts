@@ -2,7 +2,7 @@ import { v4 as uuid } from 'uuid';
 import { RPC } from '../lib/rpc.js';
 import { arrayOf, booleanField, numberField, optional, stringField } from '../lib/validator.js';
 import { AdminBonusInfo, AdminGuess, AdminQuestion, AdminQuestionOrder, AdminTeam } from './admin_state.js';
-import { Doc, StatusResponse } from './base.js';
+import { Doc, RequestDoc, StatusResponse } from './base.js';
 
 export interface AdminUpgradeRequest {
   password: string;
@@ -30,15 +30,13 @@ export const upgradeToAdmin = new RPC<AdminUpgradeRequest, StatusResponse>(
   },
 );
 
-export type AdminRequestDoc<TDoc extends Doc> = Omit<TDoc, keyof Doc> & Partial<Doc>;
-
 const requestDocValidator = {
   _id: optional(stringField),
   _modified: optional(numberField),
   _deleted: optional(booleanField),
 };
 
-export const upsertQuestion = new RPC<AdminRequestDoc<AdminQuestion>, StatusResponse>(
+export const upsertQuestion = new RPC<RequestDoc<AdminQuestion>, StatusResponse>(
   'upsertQuestion',
   {
     ...requestDocValidator,
@@ -54,7 +52,7 @@ export const upsertQuestion = new RPC<AdminRequestDoc<AdminQuestion>, StatusResp
   },
 );
 
-export const upsertBonusInfo = new RPC<AdminRequestDoc<AdminBonusInfo>, StatusResponse>(
+export const upsertBonusInfo = new RPC<RequestDoc<AdminBonusInfo>, StatusResponse>(
   'upsertBonusInfo',
   {
     ...requestDocValidator,
@@ -66,12 +64,13 @@ export const upsertBonusInfo = new RPC<AdminRequestDoc<AdminBonusInfo>, StatusRe
   },
 );
 
-export const upsertTeam = new RPC<AdminRequestDoc<AdminTeam>, StatusResponse>(
+export const upsertTeam = new RPC<RequestDoc<AdminTeam>, StatusResponse>(
   'upsertTeam',
   {
     ...requestDocValidator,
     name: stringField,
-    mainQuestionIndex: numberField,
+    token: stringField,
+    mainQuestionId: stringField,
     completedBonusQuestions: arrayOf(stringField),
     isSecretTeam: optional(booleanField),
   },
@@ -80,7 +79,7 @@ export const upsertTeam = new RPC<AdminRequestDoc<AdminTeam>, StatusResponse>(
   },
 );
 
-export const upsertGuess = new RPC<AdminRequestDoc<AdminGuess>, StatusResponse>(
+export const upsertGuess = new RPC<RequestDoc<AdminGuess>, StatusResponse>(
   'upsertGuess',
   {
     ...requestDocValidator,

@@ -22,6 +22,8 @@ import {
   updateAdminState,
 } from 'game-socket/dist/trivia/admin_state.js';
 
+export const ADMIN_ROOM = 'ADMIN';
+
 interface Config {
   _id: string;
   adminPassword: string;
@@ -54,16 +56,18 @@ const guessesCollection = (db: Db) => db.collection<AdminGuess>('guesses');
 
 const orderCollection = (db: Db) => db.collection<AdminQuestionOrder>('order');
 const ORDER_FILTER = { _id: DEFAULT_ORDER._id };
+const getOrder = async (db: Db) => (await orderCollection(db).findOne(ORDER_FILTER)) ?? DEFAULT_ORDER;
 
 const configCollection = (db: Db) => db.collection<Config>('config');
 const CONFIG_FILTER = { _id: DEFAULT_CONFIG._id };
+const getConfig = async (db: Db) => (await configCollection(db).findOne(CONFIG_FILTER)) ?? DEFAULT_CONFIG;
 
 export function setupAdminHandlers(server: GameServer<Db>) {
   server.register(upgradeToAdmin, async (params, socket, db, server) => {
-    const config = (await configCollection(db).findOne(CONFIG_FILTER)) ?? DEFAULT_CONFIG;
+    const config = await getConfig(db);
     const success = params.password === config.adminPassword;
     if (success) {
-      socket.join('admin');
+      socket.join(ADMIN_ROOM);
       socket.emit(
         'action',
         updateAdminState({
@@ -71,7 +75,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
           bonusInfo: await bonusInfoCollection(db).find({}).toArray(),
           teams: await teamsCollection(db).find({}).toArray(),
           guesses: await guessesCollection(db).find({}).toArray(),
-          order: (await orderCollection(db).findOne(ORDER_FILTER)) ?? undefined,
+          order: await getOrder(db),
         }),
       );
     }
@@ -80,7 +84,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
 
   const registerProtected: typeof server.register = (rpc, handler) => {
     const protectedHandler: typeof handler = (params, socket, database, server) => {
-      if (!socket.rooms.has('admin')) {
+      if (!socket.rooms.has(ADMIN_ROOM)) {
         throw new Error('Not authenticated');
       }
       return handler(params, socket, database, server);
@@ -94,7 +98,9 @@ export function setupAdminHandlers(server: GameServer<Db>) {
       ...buildDoc(params),
     };
     await questionsCollection(db).replaceOne({ _id: question._id }, question, { upsert: true });
-    server.to('admin').emit('action', updateAdminState({ questions: [question] }));
+    server.to(ADMIN_ROOM).emit('action', updateAdminState({ questions: [question] }));
+    const questionIndex = (await orderCollection(db).findOne())?.mainQuestions.indexOf(question._id);
+    await teamsCollection(db).find({ que });
     // Strip and send game question.
     server.to(`question_${question._id}`).emit('action', {});
     return { success: true };
@@ -106,7 +112,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
       ...buildDoc(params),
     };
     await bonusInfoCollection(db).replaceOne({ _id: bonusInfo._id }, bonusInfo, { upsert: true });
-    server.to('admin').emit('action', updateAdminState({ bonusInfo: [bonusInfo] }));
+    server.to(ADMIN_ROOM).emit('action', updateAdminState({ bonusInfo: [bonusInfo] }));
     return { success: true };
   });
 
@@ -116,7 +122,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
       ...buildDoc(params),
     };
     await teamsCollection(db).replaceOne({ _id: team._id }, team, { upsert: true });
-    server.to('admin').emit('action', updateAdminState({ teams: [team] }));
+    server.to(ADMIN_ROOM).emit('action', updateAdminState({ teams: [team] }));
     return { success: true };
   });
 
@@ -126,7 +132,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
       ...buildDoc(params),
     };
     await guessesCollection(db).replaceOne({ _id: guess._id }, guess, { upsert: true });
-    server.to('admin').emit('action', updateAdminState({ guesses: [guess] }));
+    server.to(ADMIN_ROOM).emit('action', updateAdminState({ guesses: [guess] }));
     return { success: true };
   });
 
@@ -138,7 +144,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
       _modified: Date.now(),
     };
     await orderCollection(db).replaceOne(ORDER_FILTER, newOrder, { upsert: true });
-    server.to('admin').emit('action', updateAdminState({ order: newOrder }));
+    server.to(ADMIN_ROOM).emit('action', updateAdminState({ order: newOrder }));
     return { success: true };
   });
 

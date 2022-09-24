@@ -10,7 +10,7 @@ import {
   createReducer,
 } from '@reduxjs/toolkit';
 import { Doc } from './base.js';
-import { GameBonusInfo, GameGuess, GameQuestion, GameTeam } from './game_state.js';
+import { GameBonusInfo, GameGuess, GameQuestion, GameQuestionOrder, GameTeam } from './game_state.js';
 
 export interface AdminQuestion extends GameQuestion {
   answer: string;
@@ -24,9 +24,8 @@ export interface AdminGuess extends GameGuess {
   teamId: string;
 }
 
-export interface AdminQuestionOrder extends Doc {
+export interface AdminQuestionOrder extends GameQuestionOrder {
   mainQuestions: string[];
-  bonusQuestions: string[];
 }
 
 export interface AdminStateUpdate {
