@@ -12,7 +12,7 @@ import {
 } from 'game-socket/dist/trivia/admin_rpcs.js';
 import { AdminQuestion, AdminTeam, AdminGuess, updateAdminState } from 'game-socket/dist/trivia/admin_state.js';
 import { updateGameState } from 'game-socket/dist/trivia/game_state.js';
-import { GAME_ROOM, getTeamRoom } from './game_handlers';
+import { GAME_ROOM, getTeamRoom, sendInitialData } from './game_handlers';
 import { Server } from 'socket.io';
 
 export const ADMIN_ROOM = 'ADMIN';
@@ -41,6 +41,12 @@ export const guessesCollection = (db: Db) => db.collection<AdminGuess>('guesses'
 const configCollection = (db: Db) => db.collection<Config>('config');
 const CONFIG_FILTER = { _id: DEFAULT_CONFIG._id };
 const getConfig = async (db: Db) => (await configCollection(db).findOne(CONFIG_FILTER)) ?? DEFAULT_CONFIG;
+
+async function refreshAllTeams(db: Db, server: Server) {
+  for (const team of await teamsCollection(db).find({}).toArray()) {
+    await sendInitialData(team, db, server.to(getTeamRoom(team._id)));
+  }
+}
 
 export function setupAdminHandlers(server: GameServer<Db>) {
   server.register(upgradeToAdmin, async (params, socket, db, server) => {
@@ -77,13 +83,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
     };
     await questionsCollection(db).replaceOne({ _id: question._id }, question, { upsert: true });
     server.to(ADMIN_ROOM).emit('action', updateAdminState({ questions: [question] }));
-    await teamsCollection(db)
-      .find({})
-      .forEach(team => {
-        if (team.mainQuestionId === question._id || question.bonusIndex !== undefined) {
-          server.to(getTeamRoom(team._id)).emit('action', updateGameState({ questions: [question] }));
-        }
-      });
+    await refreshAllTeams(db, server);
     return { success: true };
   });
 
@@ -94,13 +94,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
     };
     await teamsCollection(db).replaceOne({ _id: team._id }, team, { upsert: true });
     server.to(ADMIN_ROOM).emit('action', updateAdminState({ teams: [team] }));
-
-    const newTeamQuestion = await questionsCollection(db).findOne({ _id: team.mainQuestionId });
-    if (!newTeamQuestion) {
-      throw new Error("Team's new main question does not exist.");
-    }
-
-    server.to(getTeamRoom(team._id)).emit('action', updateGameState({ teams: [team], questions: [newTeamQuestion] }));
+    await refreshAllTeams(db, server);
     return { success: true };
   });
 
@@ -111,7 +105,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
     };
     await guessesCollection(db).replaceOne({ _id: guess._id }, guess, { upsert: true });
     server.to(ADMIN_ROOM).emit('action', updateAdminState({ guesses: [guess] }));
-    server.to(getTeamRoom(guess.teamId)).emit('action', updateGameState({ guesses: [guess] }));
+    await refreshAllTeams(db, server);
     return { success: true };
   });
 

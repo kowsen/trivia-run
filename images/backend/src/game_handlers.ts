@@ -1,5 +1,6 @@
 import { GameServer } from 'game-socket/dist/lib/server.js';
 import { Db } from 'mongodb';
+import { BroadcastOperator, Server, Socket } from 'socket.io';
 import { updateGameState } from 'game-socket/dist/trivia/game_state.js';
 import {
   upgradeToGame,
@@ -26,6 +27,23 @@ export function getTeamRoom(teamId: string): string {
   return `TEAM_${teamId}`;
 }
 
+interface SocketOrChannel {
+  emit(ev: string, args: object): boolean;
+}
+
+export async function sendInitialData(team: AdminTeam, db: Db, broadcast: SocketOrChannel) {
+  broadcast.emit(
+    'action',
+    updateGameState({
+      questions: await questionsCollection(db)
+        .find({ $or: [{ _id: team.mainQuestionId }, { bonusIndex: { $exists: true } }] })
+        .toArray(),
+      teams: await teamsCollection(db).find({ _id: team._id }).toArray(),
+      guesses: await guessesCollection(db).find({ teamId: team._id }).toArray(),
+    }),
+  );
+}
+
 export function setupGameHandlers(server: GameServer<Db>) {
   server.register(upgradeToGame, async (params, socket, db, server) => {
     const team = await teamsCollection(db).findOne({ token: params.token, ...BASE_FILTER });
@@ -34,16 +52,7 @@ export function setupGameHandlers(server: GameServer<Db>) {
     }
     socket.join(GAME_ROOM);
     socket.join(getTeamRoom(team._id));
-    socket.emit(
-      'action',
-      updateGameState({
-        questions: await questionsCollection(db)
-          .find({ $or: [{ _id: team.mainQuestionId }, { bonusIndex: { $exists: true } }] })
-          .toArray(),
-        teams: await teamsCollection(db).find({ _id: team._id }).toArray(),
-        guesses: await guessesCollection(db).find({ teamId: team._id }).toArray(),
-      }),
-    );
+    await sendInitialData(team, db, socket);
     return { teamId: team._id };
   });
 
