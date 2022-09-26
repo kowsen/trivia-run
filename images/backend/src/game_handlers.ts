@@ -1,15 +1,15 @@
 import { GameServer } from 'game-socket/dist/lib/server.js';
 import { Db } from 'mongodb';
 import { updateGameState } from 'game-socket/dist/trivia/game_state.js';
-import { upgradeToGame, guess, getRanking, createTeam, getInvite } from 'game-socket/dist/trivia/game_rpcs.js';
 import {
-  ADMIN_ROOM,
-  buildDoc,
-  guessesCollection,
-  questionsCollection,
-  teamsCollection,
-  updateQuestion,
-} from './admin_handlers';
+  upgradeToGame,
+  guess,
+  getRanking,
+  getBonusWinners,
+  createTeam,
+  getInvite,
+} from 'game-socket/dist/trivia/game_rpcs.js';
+import { ADMIN_ROOM, buildDoc, guessesCollection, questionsCollection, teamsCollection } from './admin_handlers';
 import {
   AdminQuestion,
   AdminTeam,
@@ -41,7 +41,7 @@ export function setupGameHandlers(server: GameServer<Db>) {
           .find({ $or: [{ _id: team.mainQuestionId }, { bonusIndex: { $exists: true } }] })
           .toArray(),
         teams: await teamsCollection(db).find({ _id: team._id }).toArray(),
-        guesses: await guessesCollection(db).find({ teamId: team._id }, { limit: 5 }).toArray(),
+        guesses: await guessesCollection(db).find({ teamId: team._id }).toArray(),
       }),
     );
     return { teamId: team._id };
@@ -67,8 +67,6 @@ export function setupGameHandlers(server: GameServer<Db>) {
 
     const isCorrect = !!params.text.match(question.answer);
 
-    const updatedTeams: AdminTeam[] = [];
-
     if (isCorrect) {
       if (isMainQuestionGuess) {
         if (!question.mainIndex) {
@@ -83,7 +81,10 @@ export function setupGameHandlers(server: GameServer<Db>) {
 
         const newTeam = { ...team, mainQuestionId: nextQuestion._id, ...buildDoc(team) };
         await teamsCollection(db).replaceOne({ _id: params.teamId }, newTeam);
-        updatedTeams.push(newTeam);
+        server.to(ADMIN_ROOM).emit('action', updateAdminState({ teams: [newTeam] }));
+        server
+          .to(getTeamRoom(team._id))
+          .emit('action', updateGameState({ teams: [newTeam], questions: [nextQuestion] }));
       } else {
         if (!question.bonusIndex) {
           throw new Error(`Question has no bonus index: ${params.questionId}`);
@@ -95,13 +96,9 @@ export function setupGameHandlers(server: GameServer<Db>) {
           ...buildDoc(team),
         };
         await teamsCollection(db).replaceOne({ _id: params.teamId }, newTeam);
-        updatedTeams.push(newTeam);
+        server.to(ADMIN_ROOM).emit('action', updateAdminState({ teams: [newTeam] }));
+        server.to(getTeamRoom(team._id)).emit('action', updateGameState({ teams: [newTeam] }));
       }
-    }
-
-    if (!question.firstCompletedBy) {
-      const newQuestion = { ...question, firstCompletedBy: team.name, ...buildDoc(question) };
-      await updateQuestion(newQuestion, db, server);
     }
 
     const guess: AdminGuess = {
@@ -113,15 +110,15 @@ export function setupGameHandlers(server: GameServer<Db>) {
     };
     await guessesCollection(db).insertOne(guess);
 
-    const patch = { teams: updatedTeams, guesses: [guess] };
-
-    server.to(ADMIN_ROOM).emit('action', updateAdminState(patch));
-    server.to(getTeamRoom(team._id)).emit('action', updateGameState(patch));
+    server.to(ADMIN_ROOM).emit('action', updateAdminState({ guesses: [guess] }));
+    server.to(getTeamRoom(team._id)).emit('action', updateGameState({ guesses: [guess] }));
 
     return { success: true };
   });
 
   // getRanking
+
+  // getBonusWinners
 
   // getInvite
 

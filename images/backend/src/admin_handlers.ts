@@ -42,18 +42,6 @@ const configCollection = (db: Db) => db.collection<Config>('config');
 const CONFIG_FILTER = { _id: DEFAULT_CONFIG._id };
 const getConfig = async (db: Db) => (await configCollection(db).findOne(CONFIG_FILTER)) ?? DEFAULT_CONFIG;
 
-export async function updateQuestion(question: AdminQuestion, db: Db, server: Server) {
-  await questionsCollection(db).replaceOne({ _id: question._id }, question, { upsert: true });
-  server.to(ADMIN_ROOM).emit('action', updateAdminState({ questions: [question] }));
-  await teamsCollection(db)
-    .find({})
-    .forEach(team => {
-      if (team.mainQuestionId === question._id || question.bonusIndex !== undefined) {
-        server.to(getTeamRoom(team._id)).emit('action', updateGameState({ questions: [question] }));
-      }
-    });
-}
-
 export function setupAdminHandlers(server: GameServer<Db>) {
   server.register(upgradeToAdmin, async (params, socket, db, server) => {
     const config = await getConfig(db);
@@ -87,7 +75,15 @@ export function setupAdminHandlers(server: GameServer<Db>) {
       ...params,
       ...buildDoc(params),
     };
-    await updateQuestion(question, db, server);
+    await questionsCollection(db).replaceOne({ _id: question._id }, question, { upsert: true });
+    server.to(ADMIN_ROOM).emit('action', updateAdminState({ questions: [question] }));
+    await teamsCollection(db)
+      .find({})
+      .forEach(team => {
+        if (team.mainQuestionId === question._id || question.bonusIndex !== undefined) {
+          server.to(getTeamRoom(team._id)).emit('action', updateGameState({ questions: [question] }));
+        }
+      });
     return { success: true };
   });
 
@@ -98,7 +94,13 @@ export function setupAdminHandlers(server: GameServer<Db>) {
     };
     await teamsCollection(db).replaceOne({ _id: team._id }, team, { upsert: true });
     server.to(ADMIN_ROOM).emit('action', updateAdminState({ teams: [team] }));
-    server.to(getTeamRoom(team._id)).emit('action', updateGameState({ teams: [team] }));
+
+    const newTeamQuestion = await questionsCollection(db).findOne({ _id: team.mainQuestionId });
+    if (!newTeamQuestion) {
+      throw new Error("Team's new main question does not exist.");
+    }
+
+    server.to(getTeamRoom(team._id)).emit('action', updateGameState({ teams: [team], questions: [newTeamQuestion] }));
     return { success: true };
   });
 

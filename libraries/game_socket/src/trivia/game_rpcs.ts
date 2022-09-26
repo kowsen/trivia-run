@@ -31,6 +31,14 @@ export interface RankingResponse {
   ranking: GameRankingTeam[];
 }
 
+export interface BonusWinnerRequest {
+  teamId: string;
+}
+
+export interface BonusWinnerResponse {
+  winners: { [questionId: string]: string };
+}
+
 export interface GetInviteRequest {
   teamId: string;
 }
@@ -89,6 +97,30 @@ export const getRanking = new RPC<RankingRequest, RankingResponse>(
       }
       return value;
     }),
+  },
+);
+
+export const getBonusWinners = new RPC<BonusWinnerRequest, BonusWinnerResponse>(
+  'getBonusWinners',
+  {
+    teamId: stringField,
+  },
+  {
+    winners: (value: unknown) => {
+      if (!value || typeof value !== 'object') {
+        throw new Error("Winner map isn't an object");
+      }
+
+      const winnerMap = value as { [key: string]: string };
+
+      for (const questionId of Object.keys(winnerMap)) {
+        if (typeof winnerMap[questionId] !== 'string') {
+          throw new Error('Winner map has a non-string value');
+        }
+      }
+
+      return winnerMap;
+    },
   },
 );
 

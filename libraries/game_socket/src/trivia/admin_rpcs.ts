@@ -49,7 +49,6 @@ export const upsertQuestion = new RPC<RequestDoc<AdminQuestion>, StatusResponse>
     unlockTime: optional(numberField),
     mainIndex: optional(numberField),
     bonusIndex: optional(numberField),
-    firstCompletedBy: optional(stringField),
   },
   {
     success: booleanField,

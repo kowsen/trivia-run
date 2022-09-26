@@ -29,7 +29,6 @@ export interface GameQuestion extends Doc {
   unlockTime?: number;
   mainIndex?: number;
   bonusIndex?: number;
-  firstCompletedBy?: string;
 }
 
 const DUMMY_GAME_QUESTION: RequestDoc<GameQuestion> = {
