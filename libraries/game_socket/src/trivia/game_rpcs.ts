@@ -48,7 +48,7 @@ export interface CreateTeamResponse extends StatusResponse {
   teamToken: string;
 }
 
-export const upgradeToAdmin = new RPC<GameUpgradeRequest, GameUpgradeResponse>(
+export const upgradeToGame = new RPC<GameUpgradeRequest, GameUpgradeResponse>(
   'upgradeToGame',
   {
     token: stringField,

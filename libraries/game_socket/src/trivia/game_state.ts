@@ -7,14 +7,7 @@ import {
   combineReducers,
   createAction,
 } from '@reduxjs/toolkit';
-import {
-  AdminBonusInfo,
-  AdminGuess,
-  AdminQuestion,
-  AdminQuestionOrder,
-  AdminStateUpdate,
-  AdminTeam,
-} from './admin_state.js';
+import { AdminGuess, AdminQuestion, AdminStateUpdate, AdminTeam } from './admin_state.js';
 import { Doc, RequestDoc } from './base.js';
 
 type OmitExtended<T, TChild extends T> = T & Record<keyof Omit<TChild, keyof T>, undefined>;
@@ -33,28 +26,22 @@ export interface GameQuestion extends Doc {
   image?: string;
   frame?: string;
   hideAnswer?: boolean;
+  unlockTime?: number;
+  mainIndex?: number;
+  bonusIndex?: number;
+  firstCompletedBy?: string;
 }
 
 const DUMMY_GAME_QUESTION: RequestDoc<GameQuestion> = {
   title: 'DUMMY',
 };
 
-export function populateMainQuestionTitle(
-  question: AdminQuestion,
-  mainQuestionOrder: string[],
-  prefix: string,
-): AdminQuestion {
-  if (!question.title) {
-    const mainQuestionIndex = mainQuestionOrder.indexOf(question._id);
-    if (mainQuestionIndex !== -1) {
-      return {
-        ...question,
-        title: `${prefix} ${mainQuestionIndex}`,
-      };
-    }
-  }
-  return question;
-}
+const LOCKED_QUESTION_PATCH: Partial<GameQuestion> = {
+  text: '',
+  image: '',
+  frame: '',
+  hideAnswer: true,
+};
 
 export function stripGameQuestion(question: AdminQuestion): OmitExtended<GameQuestion, AdminQuestion> {
   if (question._deleted) {
@@ -64,29 +51,19 @@ export function stripGameQuestion(question: AdminQuestion): OmitExtended<GameQue
       answer: undefined,
     };
   }
+
+  if (question.unlockTime && question.unlockTime > Date.now()) {
+    return {
+      ...question,
+      ...LOCKED_QUESTION_PATCH,
+      answer: undefined,
+    };
+  }
+
   return {
     ...question,
     answer: undefined,
   };
-}
-
-export interface GameBonusInfo extends Doc {
-  unlockTime: number;
-  firstCompletedBy?: string;
-}
-
-const DUMMY_GAME_BONUS_INFO: RequestDoc<GameBonusInfo> = {
-  unlockTime: -1,
-};
-
-export function stripGameBonusInfo(bonusInfo: AdminBonusInfo): OmitExtended<GameBonusInfo, AdminBonusInfo> {
-  if (bonusInfo._deleted) {
-    return {
-      ...DUMMY_GAME_BONUS_INFO,
-      ...getMetadata(bonusInfo),
-    };
-  }
-  return bonusInfo;
 }
 
 export interface GameTeam extends Doc {
@@ -144,18 +121,8 @@ export interface GameQuestionOrder extends Doc {
   bonusQuestions: string[];
 }
 
-export function stripGameQuestionOrder(
-  questionOrder: AdminQuestionOrder,
-): OmitExtended<GameQuestionOrder, AdminQuestionOrder> {
-  return {
-    ...questionOrder,
-    mainQuestions: undefined,
-  };
-}
-
 export interface GameStateUpdate {
   questions?: GameQuestion[];
-  bonusInfo?: GameBonusInfo[];
   teams?: GameTeam[];
   guesses?: GameGuess[];
   order?: GameQuestionOrder;
@@ -165,10 +132,8 @@ export const updateGameState = createAction('game/update', (payload: AdminStateU
   return {
     payload: {
       questions: payload.questions?.map(stripGameQuestion),
-      bonusInfo: payload.bonusInfo?.map(stripGameBonusInfo),
       teams: payload.teams?.map(stripGameTeam),
       guesses: payload.guesses?.map(stripGameGuess),
-      order: payload.order ? stripGameQuestionOrder(payload.order) : undefined,
     },
   };
 });
@@ -197,14 +162,6 @@ const questionsSlice = createReducer(questionsAdapter.getInitialState(), builder
   handleUpdateGameState(builder, questionsAdapter, ({ questions }) => questions);
 });
 
-const bonusInfoAdapter = createEntityAdapter<GameBonusInfo>({
-  selectId: model => model._id,
-});
-
-const bonusInfoSlice = createReducer(bonusInfoAdapter.getInitialState(), builder => {
-  handleUpdateGameState(builder, bonusInfoAdapter, ({ bonusInfo }) => bonusInfo);
-});
-
 const teamAdapter = createEntityAdapter<GameTeam>({
   selectId: model => model._id,
 });
@@ -221,26 +178,8 @@ const guessSlice = createReducer(guessAdapter.getInitialState(), builder => {
   handleUpdateGameState(builder, guessAdapter, ({ guesses }) => guesses);
 });
 
-const INITIAL_QUESITON_ORDER: GameQuestionOrder = {
-  _id: 'INITIAL_QUESTION_ORDER',
-  _modified: -1,
-  bonusQuestions: [],
-};
-
-const orderSlice = createReducer(INITIAL_QUESITON_ORDER, builder => {
-  builder.addCase(updateGameState, (state, action) => {
-    const newOrder = action.payload.order;
-    if (newOrder && state._modified < newOrder._modified) {
-      return newOrder;
-    }
-    return state;
-  });
-});
-
 export const gameReducer = combineReducers({
   questions: questionsSlice,
-  bonusInfo: bonusInfoSlice,
   teams: teamSlice,
   guesses: guessSlice,
-  order: orderSlice,
 });

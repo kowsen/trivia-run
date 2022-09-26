@@ -5,22 +5,15 @@ import { Doc } from 'game-socket/dist/trivia/base.js';
 import {
   upgradeToAdmin,
   upsertQuestion,
-  upsertBonusInfo,
   upsertTeam,
   upsertGuess,
-  patchOrder,
   setAdminPassword,
   uploadFile,
-  AdminRequestDoc,
 } from 'game-socket/dist/trivia/admin_rpcs.js';
-import {
-  AdminQuestion,
-  AdminBonusInfo,
-  AdminTeam,
-  AdminGuess,
-  AdminQuestionOrder,
-  updateAdminState,
-} from 'game-socket/dist/trivia/admin_state.js';
+import { AdminQuestion, AdminTeam, AdminGuess, updateAdminState } from 'game-socket/dist/trivia/admin_state.js';
+import { updateGameState } from 'game-socket/dist/trivia/game_state.js';
+import { GAME_ROOM, getTeamRoom } from './game_handlers';
+import { Server } from 'socket.io';
 
 export const ADMIN_ROOM = 'ADMIN';
 
@@ -31,14 +24,7 @@ interface Config {
 
 const DEFAULT_CONFIG: Config = { _id: 'SERVER_CONFIG', adminPassword: 'password' };
 
-const DEFAULT_ORDER: AdminQuestionOrder = {
-  _id: 'QUESTION_ORDER',
-  _modified: -1,
-  mainQuestions: [],
-  bonusQuestions: [],
-};
-
-function buildDoc(params: AdminRequestDoc<Doc>): Doc {
+export function buildDoc(params: Partial<Doc>): Doc {
   return {
     _id: params._id ?? uuid(),
     _modified: Date.now(),
@@ -46,21 +32,27 @@ function buildDoc(params: AdminRequestDoc<Doc>): Doc {
   };
 }
 
-const questionsCollection = (db: Db) => db.collection<AdminQuestion>('questions');
+export const questionsCollection = (db: Db) => db.collection<AdminQuestion>('questions');
 
-const bonusInfoCollection = (db: Db) => db.collection<AdminBonusInfo>('bonusInfo');
+export const teamsCollection = (db: Db) => db.collection<AdminTeam>('teams');
 
-const teamsCollection = (db: Db) => db.collection<AdminTeam>('teams');
-
-const guessesCollection = (db: Db) => db.collection<AdminGuess>('guesses');
-
-const orderCollection = (db: Db) => db.collection<AdminQuestionOrder>('order');
-const ORDER_FILTER = { _id: DEFAULT_ORDER._id };
-const getOrder = async (db: Db) => (await orderCollection(db).findOne(ORDER_FILTER)) ?? DEFAULT_ORDER;
+export const guessesCollection = (db: Db) => db.collection<AdminGuess>('guesses');
 
 const configCollection = (db: Db) => db.collection<Config>('config');
 const CONFIG_FILTER = { _id: DEFAULT_CONFIG._id };
 const getConfig = async (db: Db) => (await configCollection(db).findOne(CONFIG_FILTER)) ?? DEFAULT_CONFIG;
+
+export async function updateQuestion(question: AdminQuestion, db: Db, server: Server) {
+  await questionsCollection(db).replaceOne({ _id: question._id }, question, { upsert: true });
+  server.to(ADMIN_ROOM).emit('action', updateAdminState({ questions: [question] }));
+  await teamsCollection(db)
+    .find({})
+    .forEach(team => {
+      if (team.mainQuestionId === question._id || question.bonusIndex !== undefined) {
+        server.to(getTeamRoom(team._id)).emit('action', updateGameState({ questions: [question] }));
+      }
+    });
+}
 
 export function setupAdminHandlers(server: GameServer<Db>) {
   server.register(upgradeToAdmin, async (params, socket, db, server) => {
@@ -72,10 +64,8 @@ export function setupAdminHandlers(server: GameServer<Db>) {
         'action',
         updateAdminState({
           questions: await questionsCollection(db).find({}).toArray(),
-          bonusInfo: await bonusInfoCollection(db).find({}).toArray(),
           teams: await teamsCollection(db).find({}).toArray(),
           guesses: await guessesCollection(db).find({}).toArray(),
-          order: await getOrder(db),
         }),
       );
     }
@@ -97,22 +87,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
       ...params,
       ...buildDoc(params),
     };
-    await questionsCollection(db).replaceOne({ _id: question._id }, question, { upsert: true });
-    server.to(ADMIN_ROOM).emit('action', updateAdminState({ questions: [question] }));
-    const questionIndex = (await orderCollection(db).findOne())?.mainQuestions.indexOf(question._id);
-    await teamsCollection(db).find({ que });
-    // Strip and send game question.
-    server.to(`question_${question._id}`).emit('action', {});
-    return { success: true };
-  });
-
-  registerProtected(upsertBonusInfo, async (params, socket, db, server) => {
-    const bonusInfo: AdminBonusInfo = {
-      ...params,
-      ...buildDoc(params),
-    };
-    await bonusInfoCollection(db).replaceOne({ _id: bonusInfo._id }, bonusInfo, { upsert: true });
-    server.to(ADMIN_ROOM).emit('action', updateAdminState({ bonusInfo: [bonusInfo] }));
+    await updateQuestion(question, db, server);
     return { success: true };
   });
 
@@ -123,6 +98,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
     };
     await teamsCollection(db).replaceOne({ _id: team._id }, team, { upsert: true });
     server.to(ADMIN_ROOM).emit('action', updateAdminState({ teams: [team] }));
+    server.to(getTeamRoom(team._id)).emit('action', updateGameState({ teams: [team] }));
     return { success: true };
   });
 
@@ -133,18 +109,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
     };
     await guessesCollection(db).replaceOne({ _id: guess._id }, guess, { upsert: true });
     server.to(ADMIN_ROOM).emit('action', updateAdminState({ guesses: [guess] }));
-    return { success: true };
-  });
-
-  registerProtected(patchOrder, async (params, socket, db, server) => {
-    const currentOrder = await orderCollection(db).findOne(ORDER_FILTER);
-    const newOrder: AdminQuestionOrder = {
-      ...(currentOrder ?? DEFAULT_ORDER),
-      ...params,
-      _modified: Date.now(),
-    };
-    await orderCollection(db).replaceOne(ORDER_FILTER, newOrder, { upsert: true });
-    server.to(ADMIN_ROOM).emit('action', updateAdminState({ order: newOrder }));
+    server.to(getTeamRoom(guess.teamId)).emit('action', updateGameState({ guesses: [guess] }));
     return { success: true };
   });
 
