@@ -6,11 +6,11 @@ import {
   upgradeToGame,
   guess,
   getRanking,
-  getBonusWinners,
   createTeam,
   getInvite,
+  GameRankingTeam,
 } from 'game-socket/dist/trivia/game_rpcs.js';
-import { ADMIN_ROOM, buildDoc, guessesCollection, questionsCollection, teamsCollection } from './admin_handlers';
+import { ADMIN_ROOM, buildDoc, guessesCollection, questionsCollection, teamsCollection } from './admin_handlers.js';
 import {
   AdminQuestion,
   AdminTeam,
@@ -18,6 +18,7 @@ import {
   updateAdminState,
   AdminStateUpdate,
 } from 'game-socket/dist/trivia/admin_state.js';
+import { generateToken } from 'game-socket/dist/trivia/base.js';
 
 const BASE_FILTER = { _deleted: { $ne: true } };
 
@@ -27,19 +28,37 @@ export function getTeamRoom(teamId: string): string {
   return `TEAM_${teamId}`;
 }
 
+export interface GameInvite {
+  teamId: string;
+  inviteCode: string;
+}
+
+export const invitesCollection = (db: Db) => db.collection<GameInvite>('invites');
+
 interface SocketOrChannel {
   emit(ev: string, args: object): boolean;
 }
 
 export async function sendInitialData(team: AdminTeam, db: Db, broadcast: SocketOrChannel) {
+  const questions = await questionsCollection(db)
+    .find({ $or: [{ _id: team.mainQuestionId }, { bonusIndex: { $exists: true } }] })
+    .toArray();
+  const guesses = (
+    await Promise.all(
+      questions.map(question =>
+        guessesCollection(db)
+          .find({ teamId: team._id, questionId: question._id }, { limit: 5 })
+          .sort('_modified', -1)
+          .toArray(),
+      ),
+    )
+  ).flat();
   broadcast.emit(
     'action',
     updateGameState({
-      questions: await questionsCollection(db)
-        .find({ $or: [{ _id: team.mainQuestionId }, { bonusIndex: { $exists: true } }] })
-        .toArray(),
+      questions,
       teams: await teamsCollection(db).find({ _id: team._id }).toArray(),
-      guesses: await guessesCollection(db).find({ teamId: team._id }).toArray(),
+      guesses,
     }),
   );
 }
@@ -99,6 +118,14 @@ export function setupGameHandlers(server: GameServer<Db>) {
           throw new Error(`Question has no bonus index: ${params.questionId}`);
         }
 
+        if (!question.bonusWinner) {
+          const newQuestion = { ...question, bonusWinner: team.name, ...buildDoc(question) };
+          await questionsCollection(db).replaceOne({ _id: params.questionId }, newQuestion);
+          const patch = { questions: [newQuestion] };
+          server.to(ADMIN_ROOM).emit('action', updateAdminState(patch));
+          server.to(GAME_ROOM).emit('action', updateGameState(patch));
+        }
+
         const newTeam = {
           ...team,
           completedBonusQuestions: [...team.completedBonusQuestions, question._id],
@@ -125,11 +152,64 @@ export function setupGameHandlers(server: GameServer<Db>) {
     return { success: true };
   });
 
-  // getRanking
+  server.register(getRanking, async (params, socket, db, server) => {
+    const orderMap: { [id: string]: number } = {};
+    await questionsCollection(db)
+      .find({ mainIndex: { $exists: true } })
+      .forEach(question => {
+        if (question.mainIndex) {
+          orderMap[question._id] = question.mainIndex;
+        }
+      });
 
-  // getBonusWinners
+    const teams = await teamsCollection(db).find({}).toArray();
+    teams.sort((a, b) => {
+      if (a.mainQuestionId === b.mainQuestionId) {
+        return a._modified - b._modified;
+      }
+      return orderMap[b.mainQuestionId] - orderMap[a.mainQuestionId];
+    });
 
-  // getInvite
+    const isYouSecret = teams.find(team => team._id === params.teamId)?.isSecretTeam;
 
-  // createTeam
+    return {
+      ranking: teams
+        .filter(team => isYouSecret || !team.isSecretTeam)
+        .map(team => {
+          const rankingTeam: GameRankingTeam = { name: team.name };
+          if (team._id === params.teamId) {
+            rankingTeam.isYou = true;
+          }
+          if (team.isSecretTeam) {
+            rankingTeam.isSecretTeam = true;
+          }
+          return rankingTeam;
+        }),
+    };
+  });
+
+  server.register(createTeam, async (params, socket, db, server) => {
+    const teamName = params.name.substring(16);
+    if (await teamsCollection(db).findOne({ name: teamName })) {
+      return { failureReason: 'Team Name already exists.' };
+    }
+
+    const firstQuestion = await questionsCollection(db).findOne({ mainIndex: 0 });
+    if (!firstQuestion) {
+      return { failureReason: 'Internal error, try again.' };
+    }
+
+    const team: AdminTeam = {
+      name: teamName,
+      token: generateToken(6),
+      completedBonusQuestions: [],
+      mainQuestionId: firstQuestion._id,
+      ...buildDoc({}),
+    };
+
+    await teamsCollection(db).insertOne(team);
+    server.to(ADMIN_ROOM).emit('action', updateAdminState({ teams: [team] }));
+
+    return { teamToken: team.token };
+  });
 }

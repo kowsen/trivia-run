@@ -24,19 +24,10 @@ export interface GuessRequest {
 
 export interface RankingRequest {
   teamId: string;
-  page: number;
 }
 
 export interface RankingResponse {
   ranking: GameRankingTeam[];
-}
-
-export interface BonusWinnerRequest {
-  teamId: string;
-}
-
-export interface BonusWinnerResponse {
-  winners: { [questionId: string]: string };
 }
 
 export interface GetInviteRequest {
@@ -52,8 +43,9 @@ export interface CreateTeamRequest {
   name: string;
 }
 
-export interface CreateTeamResponse extends StatusResponse {
-  teamToken: string;
+export interface CreateTeamResponse {
+  teamToken?: string;
+  failureReason?: string;
 }
 
 export const upgradeToGame = new RPC<GameUpgradeRequest, GameUpgradeResponse>(
@@ -82,7 +74,6 @@ export const getRanking = new RPC<RankingRequest, RankingResponse>(
   'getRanking',
   {
     teamId: stringField,
-    page: numberField,
   },
   {
     ranking: arrayOf((value: unknown) => {
@@ -100,30 +91,6 @@ export const getRanking = new RPC<RankingRequest, RankingResponse>(
   },
 );
 
-export const getBonusWinners = new RPC<BonusWinnerRequest, BonusWinnerResponse>(
-  'getBonusWinners',
-  {
-    teamId: stringField,
-  },
-  {
-    winners: (value: unknown) => {
-      if (!value || typeof value !== 'object') {
-        throw new Error("Winner map isn't an object");
-      }
-
-      const winnerMap = value as { [key: string]: string };
-
-      for (const questionId of Object.keys(winnerMap)) {
-        if (typeof winnerMap[questionId] !== 'string') {
-          throw new Error('Winner map has a non-string value');
-        }
-      }
-
-      return winnerMap;
-    },
-  },
-);
-
 export const createTeam = new RPC<CreateTeamRequest, CreateTeamResponse>(
   'createTeam',
   {
@@ -131,8 +98,8 @@ export const createTeam = new RPC<CreateTeamRequest, CreateTeamResponse>(
     name: stringField,
   },
   {
-    success: booleanField,
-    teamToken: stringField,
+    failureReason: optional(stringField),
+    teamToken: optional(stringField),
   },
 );
 
