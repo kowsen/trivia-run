@@ -2,38 +2,34 @@
   import svelteLogo from './assets/svelte.svg'
   import Counter from './lib/Counter.svelte'
   import { GameClient } from 'game-socket/dist/lib/client.js';
-  import { RPC } from 'game-socket/dist/lib/rpc.js';
-  import { stringField, booleanField } from 'game-socket/dist/lib/validator.js';
+  import {upgradeToAdmin, upsertQuestion} from 'game-socket/dist/trivia/admin_rpcs.js';
+  import { adminReducer } from 'game-socket/dist/trivia/admin_state.js'
   import { createSlice } from '@reduxjs/toolkit'
   import type { PayloadAction } from '@reduxjs/toolkit'
+    import { derived } from 'svelte/store';
 
-  interface GameState {
-    lastGuess: string;
-  }
-
-  const initialState: GameState = { lastGuess: "" };
-
-  const guessSlice = createSlice({
-    name: 'guess',
-    initialState,
-    reducers: {
-      guess(state, action: PayloadAction<{guess: string}>) {
-        state.lastGuess = action.payload.guess
-      },
-    },
-  })
-
-  const client = new GameClient("ws://localhost:8082", guessSlice.reducer);
-
-  const testRpc = new RPC('guess', { value: stringField }, { isCorrect: booleanField });
+  const client = new GameClient("ws://localhost:8082", adminReducer);
 
   let guess: string = "";
   let result: boolean = false;
 
   async function sendGuess() {
-    const response = await client.call(testRpc, {value: guess});
-    result = response.isCorrect;
+    const result = await client.call(upsertQuestion, {title: guess, answer: "asdf"});
+    console.log(result);
   }
+
+  async function upgrade() {
+    const result = await client.call(upgradeToAdmin, {password: "password"});
+    console.log(result);
+  }
+
+  void upgrade();
+
+  const questionTitles = derived(client, ({questions}) => {
+    return questions.ids.map(id => questions.entities[id]).map(question => question.title).join(', ');
+  });
+
+  $: testState = JSON.stringify($client);
 </script>
 
 <main>
@@ -53,7 +49,7 @@
 
   <input type="text" bind:value={guess} />
   <p>Correct: {result}</p>
-  <p>LAST: {($client).lastGuess}</p>
+  <p>LAST: {$questionTitles}</p>
   <button on:click={sendGuess}>Send</button>
 
   <p>

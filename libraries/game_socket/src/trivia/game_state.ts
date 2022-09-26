@@ -1,12 +1,8 @@
-import {
-  ActionReducerMapBuilder,
-  EntityState,
-  EntityAdapter,
-  createEntityAdapter,
-  createReducer,
-  combineReducers,
-  createAction,
-} from '@reduxjs/toolkit';
+import type { ActionReducerMapBuilder, EntityState, EntityAdapter } from '@reduxjs/toolkit';
+import * as toolkitRaw from '@reduxjs/toolkit';
+const { combineReducers, createAction, createEntityAdapter, createReducer } = ((toolkitRaw as any).default ??
+  toolkitRaw) as typeof toolkitRaw;
+
 import { AdminGuess, AdminQuestion, AdminStateUpdate, AdminTeam } from './admin_state.js';
 import { Doc, RequestDoc } from './base.js';
 

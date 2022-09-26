@@ -1,14 +1,8 @@
-import {
-  createAction,
-  createSlice,
-  createEntityAdapter,
-  PayloadAction,
-  combineReducers,
-  ActionReducerMapBuilder,
-  EntityState,
-  EntityAdapter,
-  createReducer,
-} from '@reduxjs/toolkit';
+import type { ActionReducerMapBuilder, EntityState, EntityAdapter } from '@reduxjs/toolkit';
+import * as toolkitRaw from '@reduxjs/toolkit';
+const { combineReducers, createAction, createEntityAdapter, createReducer } = ((toolkitRaw as any).default ??
+  toolkitRaw) as typeof toolkitRaw;
+
 import { Doc } from './base.js';
 import { GameGuess, GameQuestion, GameTeam } from './game_state.js';
 

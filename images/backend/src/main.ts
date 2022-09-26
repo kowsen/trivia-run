@@ -13,6 +13,12 @@ async function main() {
   const server = new GameServer<Db>({
     port: 80,
     dataAdapter: db,
+    socketOptions: {
+      cors: {
+        origin: 'http://localhost:8083',
+        methods: ['GET', 'POST'],
+      },
+    },
   });
 
   setupAdminHandlers(server);

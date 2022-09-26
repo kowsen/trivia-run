@@ -1,7 +1,9 @@
-import { Server, Socket } from 'socket.io';
-import { RPC } from './rpc.js';
+import { Server, ServerOptions, Socket } from 'socket.io';
+import { RPC, rpcCallValidator } from './rpc.js';
+import { validate } from './validator.js';
 
 export interface GameServerConfig<TDataAdapter> {
+  socketOptions?: Partial<ServerOptions>;
   port: number;
   dataAdapter: TDataAdapter;
 }
@@ -11,10 +13,23 @@ export class GameServer<TDataAdapter> {
   private readonly server: Server;
 
   constructor(private readonly config: GameServerConfig<TDataAdapter>) {
-    this.server = new Server();
+    this.server = new Server(config.socketOptions);
 
     this.server.on('connection', socket => {
-      socket.on('rpc', async (rpcCall: unknown) => {});
+      socket.on('rpc', async (rpcCall: unknown) => {
+        if (!validate(rpcCall, rpcCallValidator)) {
+          console.warn('Invalid RPC call', rpcCall);
+          return;
+        }
+
+        const handler = this.handlers.get(rpcCall.method);
+        if (!handler) {
+          socket.emit('rpc', { id: rpcCall.id, error: 'No handler registered for method.' });
+          return;
+        }
+
+        await handler(rpcCall, socket);
+      });
     });
 
     this.server.listen(config.port);
@@ -28,9 +43,9 @@ export class GameServer<TDataAdapter> {
       throw new Error(`Cannot register multiple handlers for method ${rpc.method}`);
     }
 
-    const requestHandler = async (params: unknown, socket: Socket) => {
+    const requestHandler = async (value: unknown, socket: Socket) => {
       try {
-        const call = rpc.parseCall(params);
+        const call = rpc.parseCall(value);
         try {
           const result = await handler(call.params, socket, this.config.dataAdapter, this.server);
           socket.emit('rpc', rpc.buildResponse(call, result));
