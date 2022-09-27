@@ -1,7 +1,7 @@
 import { GameServer } from 'game-socket/dist/lib/server.js';
 import { Db } from 'mongodb';
 import { BroadcastOperator, Server, Socket } from 'socket.io';
-import { updateGameState } from 'game-socket/dist/trivia/game_state.js';
+import { updateGameState, addOrderToQuestion } from 'game-socket/dist/trivia/game_state.js';
 import {
   upgradeToGame,
   guess,
@@ -10,7 +10,14 @@ import {
   getInvite,
   GameRankingTeam,
 } from 'game-socket/dist/trivia/game_rpcs.js';
-import { ADMIN_ROOM, buildDoc, guessesCollection, questionsCollection, teamsCollection } from './admin_handlers.js';
+import {
+  ADMIN_ROOM,
+  buildDoc,
+  getOrder,
+  guessesCollection,
+  questionsCollection,
+  teamsCollection,
+} from './admin_handlers.js';
 import {
   AdminQuestion,
   AdminTeam,
@@ -40,9 +47,12 @@ interface SocketOrChannel {
 }
 
 export async function sendInitialData(team: AdminTeam, db: Db, broadcast: SocketOrChannel) {
-  const questions = await questionsCollection(db)
-    .find({ $or: [{ _id: team.mainQuestionId }, { bonusIndex: { $exists: true } }] })
-    .toArray();
+  const order = await getOrder(db);
+  const questions = (
+    await questionsCollection(db)
+      .find({ $or: [{ _id: team.mainQuestionId }, { bonusIndex: { $exists: true } }] })
+      .toArray()
+  ).map(question => addOrderToQuestion(question, order));
   const guesses = (
     await Promise.all(
       questions.map(question =>
@@ -96,34 +106,41 @@ export function setupGameHandlers(server: GameServer<Db>) {
     const isCorrect = !!params.text.match(question.answer);
 
     if (isCorrect) {
+      const order = await getOrder(db);
+
       if (isMainQuestionGuess) {
-        if (!question.mainIndex) {
+        const currentIndex = order.main.indexOf(question._id);
+
+        if (currentIndex === -1) {
           throw new Error(`Main question has no index: ${params.questionId}`);
         }
 
-        const nextQuestion = await questionsCollection(db).findOne({ mainIndex: question.mainIndex + 1 });
-
-        if (!nextQuestion) {
-          throw new Error(`Failed to find a next question with index: ${question.mainIndex + 1}`);
+        const nextQuestionId = order.main[currentIndex + 1];
+        if (!nextQuestionId) {
+          throw new Error(`Failed to find a next question with index: ${currentIndex + 1}`);
         }
 
-        const newTeam = { ...team, mainQuestionId: nextQuestion._id, ...buildDoc(team) };
+        const nextQuestion = await questionsCollection(db).findOne({ _id: nextQuestionId });
+        if (!nextQuestion) {
+          throw new Error(`Failed to find a next question with index: ${currentIndex + 1}`);
+        }
+
+        const newTeam = { ...team, mainQuestionId: nextQuestionId, ...buildDoc(team) };
         await teamsCollection(db).replaceOne({ _id: params.teamId }, newTeam);
         server.to(ADMIN_ROOM).emit('action', updateAdminState({ teams: [newTeam] }));
         server
           .to(getTeamRoom(team._id))
-          .emit('action', updateGameState({ teams: [newTeam], questions: [nextQuestion] }));
+          .emit('action', updateGameState({ teams: [newTeam], questions: [addOrderToQuestion(nextQuestion, order)] }));
       } else {
-        if (!question.bonusIndex) {
+        if (!order.bonus.includes(question._id)) {
           throw new Error(`Question has no bonus index: ${params.questionId}`);
         }
 
         if (!question.bonusWinner) {
           const newQuestion = { ...question, bonusWinner: team.name, ...buildDoc(question) };
           await questionsCollection(db).replaceOne({ _id: params.questionId }, newQuestion);
-          const patch = { questions: [newQuestion] };
-          server.to(ADMIN_ROOM).emit('action', updateAdminState(patch));
-          server.to(GAME_ROOM).emit('action', updateGameState(patch));
+          server.to(ADMIN_ROOM).emit('action', updateAdminState({ questions: [newQuestion] }));
+          server.to(GAME_ROOM).emit('action', updateGameState({ questions: [addOrderToQuestion(newQuestion, order)] }));
         }
 
         const newTeam = {
@@ -153,21 +170,14 @@ export function setupGameHandlers(server: GameServer<Db>) {
   });
 
   server.register(getRanking, async (params, socket, db, server) => {
-    const orderMap: { [id: string]: number } = {};
-    await questionsCollection(db)
-      .find({ mainIndex: { $exists: true } })
-      .forEach(question => {
-        if (question.mainIndex) {
-          orderMap[question._id] = question.mainIndex;
-        }
-      });
+    const order = await getOrder(db);
 
     const teams = await teamsCollection(db).find({}).toArray();
     teams.sort((a, b) => {
       if (a.mainQuestionId === b.mainQuestionId) {
         return a._modified - b._modified;
       }
-      return orderMap[b.mainQuestionId] - orderMap[a.mainQuestionId];
+      return order.main.indexOf(b.mainQuestionId) - order.main.indexOf(a.mainQuestionId);
     });
 
     const isYouSecret = teams.find(team => team._id === params.teamId)?.isSecretTeam;

@@ -1,7 +1,7 @@
 import { v4 as uuid } from 'uuid';
 import { RPC } from '../lib/rpc.js';
 import { arrayOf, booleanField, numberField, optional, stringField } from '../lib/validator.js';
-import { AdminGuess, AdminQuestion, AdminTeam } from './admin_state.js';
+import { AdminGuess, AdminQuestion, AdminQuestionOrder, AdminTeam } from './admin_state.js';
 import { Doc, RequestDoc, StatusResponse } from './base.js';
 
 export interface AdminUpgradeRequest {
@@ -47,8 +47,6 @@ export const upsertQuestion = new RPC<RequestDoc<AdminQuestion>, StatusResponse>
     frame: optional(stringField),
     hideAnswer: optional(booleanField),
     unlockTime: optional(numberField),
-    mainIndex: optional(numberField),
-    bonusIndex: optional(numberField),
     bonusWinner: optional(stringField),
   },
   {
@@ -79,6 +77,18 @@ export const upsertGuess = new RPC<RequestDoc<AdminGuess>, StatusResponse>(
     teamId: stringField,
     questionId: stringField,
     isCorrect: booleanField,
+  },
+  {
+    success: booleanField,
+  },
+);
+
+export const setQuestionOrder = new RPC<RequestDoc<AdminQuestionOrder>, StatusResponse>(
+  'setQuestionOrder',
+  {
+    ...requestDocValidator,
+    main: arrayOf(stringField),
+    bonus: arrayOf(stringField),
   },
   {
     success: booleanField,

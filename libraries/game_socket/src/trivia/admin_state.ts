@@ -3,10 +3,10 @@ import * as toolkitRaw from '@reduxjs/toolkit';
 const { combineReducers, createAction, createEntityAdapter, createReducer } = ((toolkitRaw as any).default ??
   toolkitRaw) as typeof toolkitRaw;
 
-import { Doc } from './base.js';
+import { BaseQuestion, Doc } from './base.js';
 import { GameGuess, GameQuestion, GameTeam } from './game_state.js';
 
-export interface AdminQuestion extends GameQuestion {
+export interface AdminQuestion extends BaseQuestion {
   answer: string;
 }
 
@@ -16,10 +16,16 @@ export interface AdminGuess extends GameGuess {
   teamId: string;
 }
 
+export interface AdminQuestionOrder extends Doc {
+  main: string[];
+  bonus: string[];
+}
+
 export interface AdminStateUpdate {
   questions?: AdminQuestion[];
   teams?: AdminTeam[];
   guesses?: AdminGuess[];
+  order?: AdminQuestionOrder;
 }
 
 export const updateAdminState = createAction('admin/update', (payload: AdminStateUpdate) => ({ payload }));
@@ -64,8 +70,17 @@ const guessSlice = createReducer(guessAdapter.getInitialState(), builder => {
   handleUpdateAdminState(builder, guessAdapter, ({ guesses }) => guesses);
 });
 
+const orderAdapter = createEntityAdapter<AdminQuestionOrder>({
+  selectId: model => model._id,
+});
+
+const orderSlice = createReducer(orderAdapter.getInitialState(), builder => {
+  handleUpdateAdminState(builder, orderAdapter, ({ order }) => (order ? [order] : order));
+});
+
 export const adminReducer = combineReducers({
   questions: questionsSlice,
   teams: teamSlice,
   guesses: guessSlice,
+  order: orderSlice,
 });

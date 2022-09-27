@@ -10,6 +10,16 @@ export interface StatusResponse {
   success: boolean;
 }
 
+export interface BaseQuestion extends Doc {
+  title?: string;
+  text?: string;
+  image?: string;
+  frame?: string;
+  hideAnswer?: boolean;
+  unlockTime?: number;
+  bonusWinner?: string;
+}
+
 export function generateToken(length: number): string {
   const TOKEN_SEED = 'BCDFGHJKLMNPRSTWXZ';
   let token = '';

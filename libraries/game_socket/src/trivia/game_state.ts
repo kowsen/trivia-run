@@ -3,8 +3,8 @@ import * as toolkitRaw from '@reduxjs/toolkit';
 const { combineReducers, createAction, createEntityAdapter, createReducer } = ((toolkitRaw as any).default ??
   toolkitRaw) as typeof toolkitRaw;
 
-import { AdminGuess, AdminQuestion, AdminStateUpdate, AdminTeam } from './admin_state.js';
-import { Doc, RequestDoc } from './base.js';
+import { AdminGuess, AdminQuestion, AdminQuestionOrder, AdminStateUpdate, AdminTeam } from './admin_state.js';
+import { BaseQuestion, Doc, RequestDoc } from './base.js';
 
 type OmitExtended<T, TChild extends T> = T & Record<keyof Omit<TChild, keyof T>, undefined>;
 
@@ -16,20 +16,24 @@ function getMetadata(doc: Doc): Doc {
   };
 }
 
-export interface GameQuestion extends Doc {
+export interface GameQuestion extends BaseQuestion {
   title?: string;
   text?: string;
   image?: string;
   frame?: string;
   hideAnswer?: boolean;
   unlockTime?: number;
-  mainIndex?: number;
-  bonusIndex?: number;
   bonusWinner?: string;
+  mainIndex: number;
+  bonusIndex: number;
 }
+
+type AdminQuestionWithOrder = AdminQuestion & GameQuestion;
 
 const DUMMY_GAME_QUESTION: RequestDoc<GameQuestion> = {
   title: 'DUMMY',
+  mainIndex: -1,
+  bonusIndex: -1,
 };
 
 const LOCKED_QUESTION_PATCH: Partial<GameQuestion> = {
@@ -39,7 +43,13 @@ const LOCKED_QUESTION_PATCH: Partial<GameQuestion> = {
   hideAnswer: true,
 };
 
-export function stripGameQuestion(question: AdminQuestion): OmitExtended<GameQuestion, AdminQuestion> {
+export function addOrderToQuestion(question: AdminQuestion, order: AdminQuestionOrder): AdminQuestionWithOrder {
+  return { ...question, mainIndex: order.main.indexOf(question._id), bonusIndex: order.bonus.indexOf(question._id) };
+}
+
+export function stripGameQuestion(
+  question: AdminQuestionWithOrder,
+): OmitExtended<GameQuestion, AdminQuestionWithOrder> {
   if (question._deleted) {
     return {
       ...DUMMY_GAME_QUESTION,
@@ -113,18 +123,19 @@ export function stripGameGuess(guess: AdminGuess): OmitExtended<GameGuess, Admin
   };
 }
 
-export interface GameQuestionOrder extends Doc {
-  bonusQuestions: string[];
+export interface GameStateUpdateInput {
+  questions?: AdminQuestionWithOrder[];
+  teams?: AdminTeam[];
+  guesses?: AdminGuess[];
 }
 
 export interface GameStateUpdate {
   questions?: GameQuestion[];
   teams?: GameTeam[];
   guesses?: GameGuess[];
-  order?: GameQuestionOrder;
 }
 
-export const updateGameState = createAction('game/update', (payload: AdminStateUpdate) => {
+export const updateGameState = createAction('game/update', (payload: GameStateUpdateInput) => {
   return {
     payload: {
       questions: payload.questions?.map(stripGameQuestion),
