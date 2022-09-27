@@ -40,7 +40,7 @@ export const upsertQuestion = new RPC<RequestDoc<AdminQuestion>, StatusResponse>
   'upsertQuestion',
   {
     ...requestDocValidator,
-    title: stringField,
+    title: optional(stringField),
     answer: stringField,
     text: optional(stringField),
     image: optional(stringField),

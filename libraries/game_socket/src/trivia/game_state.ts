@@ -17,7 +17,7 @@ function getMetadata(doc: Doc): Doc {
 }
 
 export interface GameQuestion extends Doc {
-  title: string;
+  title?: string;
   text?: string;
   image?: string;
   frame?: string;
