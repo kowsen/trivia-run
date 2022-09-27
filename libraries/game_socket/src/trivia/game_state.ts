@@ -55,6 +55,7 @@ export function stripGameQuestion(
       ...DUMMY_GAME_QUESTION,
       ...getMetadata(question),
       answer: undefined,
+      name: undefined,
     };
   }
 
@@ -63,12 +64,14 @@ export function stripGameQuestion(
       ...question,
       ...LOCKED_QUESTION_PATCH,
       answer: undefined,
+      name: undefined,
     };
   }
 
   return {
     ...question,
     answer: undefined,
+    name: undefined,
   };
 }
 

@@ -1,0 +1,24 @@
+@import 'constants';
+
+html,
+body {
+  position: relative;
+  background-color: $background-color;
+  color: $text-color;
+}
+
+body {
+  height: 100%;
+}
+
+html, body, button, input {
+  font-family: "IBM Plex Mono", monospace;
+}
+
+h1, h2, h3, h4, h5, .accent {
+  color: #ffa34d;
+}
+
+h1, h2, h3, h4, h5, .header {
+  font-family: "Nova Mono", monospace;
+}

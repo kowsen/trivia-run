@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { GameServer } from 'game-socket/dist/lib/server.js';
 import { Doc } from 'game-socket/dist/trivia/base.js';
 import {
+  getAdminToken,
   upgradeToAdmin,
   upsertQuestion,
   upsertTeam,
@@ -41,6 +42,8 @@ export function buildDoc(params: Partial<Doc>): Doc {
 
 const DEFAULT_ORDER: AdminQuestionOrder = { ...buildDoc({}), _id: 'QUESTION_ORDER', main: [], bonus: [] };
 
+export const tokensCollection = (db: Db) => db.collection<Doc>('tokens');
+
 export const questionsCollection = (db: Db) => db.collection<AdminQuestion>('questions');
 
 export const teamsCollection = (db: Db) => db.collection<AdminTeam>('teams');
@@ -62,9 +65,21 @@ async function refreshAllTeams(db: Db, server: Server) {
 }
 
 export function setupAdminHandlers(server: GameServer<Db>) {
-  server.register(upgradeToAdmin, async (params, socket, db, server) => {
+  server.register(getAdminToken, async (params, socket, db, server) => {
     const config = await getConfig(db);
     const success = params.password === config.adminPassword;
+    let token = '';
+    if (success) {
+      const tokenDoc = buildDoc({});
+      await tokensCollection(db).insertOne(tokenDoc);
+      token = tokenDoc._id;
+    }
+    return { success, token };
+  });
+
+  server.register(upgradeToAdmin, async (params, socket, db, server) => {
+    const config = await getConfig(db);
+    const success = await tokensCollection(db).findOne({ _id: params.token });
     if (success) {
       socket.join(ADMIN_ROOM);
       socket.emit(
@@ -77,7 +92,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
         }),
       );
     }
-    return { success };
+    return { success: !!success };
   });
 
   const registerProtected: typeof server.register = (rpc, handler) => {
@@ -127,6 +142,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
     const order: AdminQuestionOrder = {
       ...params,
       ...buildDoc(params),
+      _id: DEFAULT_ORDER._id,
     };
     await orderCollection(db).replaceOne(ORDER_FILTER, order, { upsert: true });
     server.to(ADMIN_ROOM).emit('action', updateAdminState({ order }));
@@ -141,6 +157,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
       ...params,
     };
     await configCollection(db).replaceOne(CONFIG_FILTER, newConfig, { upsert: true });
+    await tokensCollection(db).deleteMany({});
     return { success: true };
   });
 

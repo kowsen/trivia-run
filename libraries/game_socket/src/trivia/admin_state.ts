@@ -7,6 +7,7 @@ import { BaseQuestion, Doc } from './base.js';
 import { GameGuess, GameQuestion, GameTeam } from './game_state.js';
 
 export interface AdminQuestion extends BaseQuestion {
+  name?: string;
   answer: string;
 }
 

@@ -4,8 +4,16 @@ import { arrayOf, booleanField, numberField, optional, stringField } from '../li
 import { AdminGuess, AdminQuestion, AdminQuestionOrder, AdminTeam } from './admin_state.js';
 import { Doc, RequestDoc, StatusResponse } from './base.js';
 
-export interface AdminUpgradeRequest {
+export interface AdminTokenRequest {
   password: string;
+}
+
+export interface AdminTokenResponse extends StatusResponse {
+  token: string;
+}
+
+export interface AdminUpgradeRequest {
+  token: string;
 }
 
 export interface PasswordChange {
@@ -20,10 +28,21 @@ export interface FileUploadResponse extends StatusResponse {
   path: string;
 }
 
+export const getAdminToken = new RPC<AdminTokenRequest, AdminTokenResponse>(
+  'getAdminToken',
+  {
+    password: stringField,
+  },
+  {
+    token: stringField,
+    success: booleanField,
+  },
+);
+
 export const upgradeToAdmin = new RPC<AdminUpgradeRequest, StatusResponse>(
   'upgradeToAdmin',
   {
-    password: stringField,
+    token: stringField,
   },
   {
     success: booleanField,
