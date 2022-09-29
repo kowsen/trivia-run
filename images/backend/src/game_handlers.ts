@@ -24,6 +24,7 @@ import {
   AdminGuess,
   updateAdminState,
   AdminStateUpdate,
+  checkGuess,
 } from 'game-socket/dist/trivia/admin_state.js';
 import { generateToken } from 'game-socket/dist/trivia/base.js';
 
@@ -103,7 +104,9 @@ export function setupGameHandlers(server: GameServer<Db>) {
       throw new Error(`Failed to find a question with id: ${params.questionId}`);
     }
 
-    const isCorrect = !!params.text.match(question.answer);
+    const text = params.text.slice(0, 32);
+
+    const isCorrect = checkGuess(text, question.answer);
 
     if (isCorrect) {
       const order = await getOrder(db);
@@ -158,7 +161,7 @@ export function setupGameHandlers(server: GameServer<Db>) {
       ...buildDoc({}),
       teamId: team._id,
       questionId: params.questionId,
-      text: params.text,
+      text,
       isCorrect,
     };
     await guessesCollection(db).insertOne(guess);

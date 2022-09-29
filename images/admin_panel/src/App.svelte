@@ -2,8 +2,8 @@
   import 'carbon-components-svelte/css/g80.css';
 
   import './styles/global.scss';
-  import './styles/scale.scss';
-  import './styles/scroll.scss';
+  // import './styles/scale.scss';
+  // import './styles/scroll.scss';
 
   import { Router, Route } from 'svelte-routing';
 
@@ -17,9 +17,9 @@
   export let url;
   let isLoaded = false;
 
-  new ResizeObserver(([event]) => {
-    document.documentElement.style.setProperty('--page-width', `${event.contentRect.width}`);
-  }).observe(document.documentElement);
+  // new ResizeObserver(([event]) => {
+  //   document.documentElement.style.setProperty('--page-width', `${event.contentRect.width}`);
+  // }).observe(document.documentElement);
 
   async function load() {
     await upgrade();

@@ -8,6 +8,9 @@ body {
 }
 
 body {
+  max-width: $max-content-width + px;
+  min-width: $min-content-width + px;
+  margin: 0 auto;
   height: 100%;
 }
 

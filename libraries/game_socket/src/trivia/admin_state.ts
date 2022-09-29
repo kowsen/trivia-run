@@ -29,6 +29,12 @@ export interface AdminStateUpdate {
   order?: AdminQuestionOrder;
 }
 
+export function checkGuess(guess: string, answer: string): boolean {
+  guess = guess.replace(/\s+/g, '');
+  const answerRegex = new RegExp(answer, 'i');
+  return !!guess.match(answerRegex) || !!guess.replace(/[^a-z0-9]/gi, '').match(answerRegex);
+}
+
 export const updateAdminState = createAction('admin/update', (payload: AdminStateUpdate) => ({ payload }));
 
 function handleUpdateAdminState<TDoc extends Doc>(

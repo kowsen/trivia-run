@@ -3,6 +3,7 @@
   import { upsertQuestion } from 'game-socket/dist/trivia/admin_rpcs';
   import type { AdminQuestion } from 'game-socket/dist/trivia/admin_state';
   import { navigate } from 'svelte-routing';
+  import AnswerTester from './AnswerTester.svelte';
   import { client, order } from './client';
   import FileField from './FileField.svelte';
   import Header from './Header.svelte';
@@ -59,6 +60,9 @@
     bonusWinner: stripFalsy(bonusWinner),
   };
 
+  $: answerInvalid = !!answer.match(/\s+/);
+  $: answerInvalidText = answerInvalid ? 'Answer regex cannot have whitespace.' : '';
+
   async function submit() {
     await client.call(upsertQuestion, generatedQuestion);
     navigate(headerLink);
@@ -93,12 +97,17 @@
 
   <FileField kind="bundle" bind:value={frame} />
 
-  <TextInput
-    labelText="Answer"
-    placeholder="Enter Answer..."
-    helperText="The question's answer as a regular expression."
-    bind:value={answer}
-  />
+  <div class="answer-input">
+    <TextInput
+      labelText="Answer"
+      placeholder="Enter Answer..."
+      helperText="The answer as a regular expression."
+      invalid={answerInvalid}
+      invalidText={answerInvalidText}
+      bind:value={answer}
+    />
+    <AnswerTester {answer} />
+  </div>
 
   <Checkbox labelText="Hide answer box?" bind:checked={hideAnswer} />
 
@@ -118,7 +127,7 @@
     />
   {/if}
 
-  <Button kind="secondary" on:click={submit}>Submit</Button>
+  <Button kind="secondary" disabled={answerInvalid} on:click={submit}>Submit</Button>
 </div>
 
 <style>
@@ -127,5 +136,11 @@
     flex-direction: column;
     margin: 24px 0;
     gap: 24px;
+  }
+
+  .answer-input {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 </style>

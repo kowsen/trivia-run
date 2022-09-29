@@ -18,7 +18,7 @@
   <span class="content">{content}</span>
 
   <div class="menu-container">
-    <OverflowMenu size="sm">
+    <OverflowMenu size="sm" flipped={true}>
       {#each options as option}
         <OverflowMenuItem text={option.text} on:click={option.action} />
       {/each}
