@@ -30,6 +30,7 @@
     "sass": "^1.55.0",
     "socket.io-client": "^4.5.2",
     "svelte-routing": "^1.6.0",
+    "unique-names-generator": "^4.7.1",
     "uuid": "^9.0.0"
   }
 }

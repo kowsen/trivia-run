@@ -85,6 +85,7 @@ export const upsertTeam = new RPC<RequestDoc<AdminTeam>, StatusResponse>(
     name: stringField,
     token: stringField,
     mainQuestionId: stringField,
+    lastAnswerTime: optional(numberField),
     completedBonusQuestions: arrayOf(stringField),
     isSecretTeam: optional(booleanField),
   },

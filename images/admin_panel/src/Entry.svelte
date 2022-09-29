@@ -11,9 +11,10 @@
   export let handle: string;
   export let content: string;
   export let options: EntryMenuItem[];
+  export let isSecret = false;
 </script>
 
-<div class="entry">
+<div class="entry" class:secret={isSecret}>
   <span class="handle header accent">{handle}</span>
   <span class="content">{content}</span>
 
@@ -34,6 +35,13 @@
     gap: 12px;
     align-items: center;
     font-size: 20px;
+
+    &.secret {
+      background-color: #4a4a4a;
+      span {
+        opacity: 0.7;
+      }
+    }
   }
 
   .handle {

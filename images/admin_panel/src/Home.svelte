@@ -5,4 +5,5 @@
 <main>
   <Link to="/main-questions">Main Questions</Link>
   <Link to="/bonus-questions">Bonus Questions</Link>
+  <Link to="/teams">Teams</Link>
 </main>

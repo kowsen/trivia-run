@@ -22,7 +22,7 @@ import {
   AdminQuestionOrder,
 } from 'game-socket/dist/trivia/admin_state.js';
 import { updateGameState } from 'game-socket/dist/trivia/game_state.js';
-import { GAME_ROOM, getTeamRoom, sendInitialData } from './game_handlers';
+import { checkAndFixTeam, GAME_ROOM, getTeamRoom, sendInitialData } from './game_handlers';
 import { Server } from 'socket.io';
 
 export const ADMIN_ROOM = 'ADMIN';
@@ -64,6 +64,7 @@ export const getOrder = async (db: Db) => (await orderCollection(db).findOne(ORD
 
 async function refreshAllTeams(db: Db, server: Server) {
   for (const team of await teamsCollection(db).find({}).toArray()) {
+    await checkAndFixTeam(team, db, server);
     await sendInitialData(team, db, server.to(getTeamRoom(team._id)));
   }
 }

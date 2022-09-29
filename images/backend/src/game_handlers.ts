@@ -47,6 +47,23 @@ interface SocketOrChannel {
   emit(ev: string, args: object): boolean;
 }
 
+export async function checkAndFixTeam(team: AdminTeam, db: Db, server: Server): Promise<AdminTeam> {
+  const order = await getOrder(db);
+  if (order.main.indexOf(team.mainQuestionId) !== -1) {
+    return team;
+  }
+
+  const newTeam = { ...team, mainQuestionId: order.main[0], _modified: Date.now() };
+  await teamsCollection(db).replaceOne({ _id: team._id }, team, { upsert: true });
+  const firstQuestion = await questionsCollection(db).findOne({ _id: order.main[0] });
+  server.to(ADMIN_ROOM).emit('action', updateAdminState({ teams: [newTeam] }));
+  server
+    .to(getTeamRoom(team._id))
+    .emit('action', updateGameState({ teams: [newTeam], questions: [addOrderToQuestion(firstQuestion!, order)] }));
+
+  return newTeam;
+}
+
 export async function sendInitialData(team: AdminTeam, db: Db, broadcast: SocketOrChannel) {
   const order = await getOrder(db);
   const questions = (
@@ -82,6 +99,7 @@ export function setupGameHandlers(server: GameServer<Db>) {
     }
     socket.join(GAME_ROOM);
     socket.join(getTeamRoom(team._id));
+    await checkAndFixTeam(team, db, server);
     await sendInitialData(team, db, socket);
     return { teamId: team._id };
   });
@@ -128,7 +146,7 @@ export function setupGameHandlers(server: GameServer<Db>) {
           throw new Error(`Failed to find a next question with index: ${currentIndex + 1}`);
         }
 
-        const newTeam = { ...team, mainQuestionId: nextQuestionId, ...buildDoc(team) };
+        const newTeam = { ...team, mainQuestionId: nextQuestionId, lastAnswerTime: Date.now(), ...buildDoc(team) };
         await teamsCollection(db).replaceOne({ _id: params.teamId }, newTeam);
         server.to(ADMIN_ROOM).emit('action', updateAdminState({ teams: [newTeam] }));
         server
@@ -178,9 +196,9 @@ export function setupGameHandlers(server: GameServer<Db>) {
     const teams = await teamsCollection(db).find({}).toArray();
     teams.sort((a, b) => {
       if (a.mainQuestionId === b.mainQuestionId) {
-        return a._modified - b._modified;
+        return (a.lastAnswerTime ?? 0) - (b.lastAnswerTime ?? 0);
       }
-      return order.main.indexOf(b.mainQuestionId) - order.main.indexOf(a.mainQuestionId);
+      return (order.main.indexOf(b.mainQuestionId) ?? -1) - (order.main.indexOf(a.mainQuestionId) ?? -1);
     });
 
     const isYouSecret = teams.find(team => team._id === params.teamId)?.isSecretTeam;

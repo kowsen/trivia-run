@@ -5,7 +5,7 @@
   import { client, order } from './client';
   import type { AdminQuestionOrder } from 'game-socket/dist/trivia/admin_state';
   import type { RequestDoc } from 'game-socket/dist/trivia/base';
-  import { setQuestionOrder, upsertQuestion } from 'game-socket/dist/trivia/admin_rpcs';
+  import { setQuestionOrder, upsertQuestion, upsertTeam } from 'game-socket/dist/trivia/admin_rpcs';
 
   const dispatch = createEventDispatcher();
 
@@ -21,6 +21,9 @@
       await client.call(setQuestionOrder, newOrder);
       const newQuestion = { ...$client.questions.entities[documentId], _deleted: true };
       await client.call(upsertQuestion, newQuestion);
+    } else if (kind === 'team') {
+      const team = $client.teams.entities[documentId];
+      await client.call(upsertTeam, { ...team, _deleted: true });
     }
     onClose();
   }
@@ -39,6 +42,12 @@
         If you delete a question that a team is currently working on, their game's gonna go pretty wonky. Only do this
         either before the game has started or with Kyle's help. It's much safer to edit questions than it is to move or
         delete them.
+      </p>
+    {/if}
+    {#if kind === 'team'}
+      <p>
+        The team will not get any notification that it's been deleted, the game will just stop working for them. I
+        wouldn't use this during the game unless this person's been abusing the system.
       </p>
     {/if}
   </ModalBody>

@@ -13,6 +13,8 @@
   import BonusQuestions from './BonusQuestions.svelte';
   import { upgrade } from './client';
   import EditQuestion from './EditQuestion.svelte';
+  import Teams from './Teams.svelte';
+  import EditTeam from './EditTeam.svelte';
 
   export let url;
   let isLoaded = false;
@@ -39,8 +41,14 @@
         <Route path="/main-questions" component={MainQuestions} />
         <Route path="/bonus-questions" component={BonusQuestions} />
 
+        <Route path="/teams" component={Teams} />
+
         <Route path="/question/edit/:id" let:params>
           <EditQuestion questionId={params.id} />
+        </Route>
+
+        <Route path="/team/edit/:id" let:params>
+          <EditTeam teamId={params.id} />
         </Route>
 
         <Route>

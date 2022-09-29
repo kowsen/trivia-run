@@ -80,6 +80,7 @@ export interface GameTeam extends Doc {
   token: string;
   completedBonusQuestions: string[];
   mainQuestionId: string;
+  lastAnswerTime?: number;
   isSecretTeam?: boolean;
 }
 
