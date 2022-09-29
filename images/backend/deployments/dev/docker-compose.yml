@@ -14,6 +14,7 @@ services:
       - ../../node_modules:/opt/app/node_modules
       - ../../dist:/opt/app/dist
       - ../../../../libraries/game_socket:/opt/node_modules/game-socket
+      - ../../../../dev_volumes/files:/var/lib/app/files
     command: bash -c "npm i --quiet --ignore-scripts && npm run start:dev"
     ports:
       - '8082:80'

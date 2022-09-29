@@ -1,4 +1,6 @@
 <script lang="ts">
+  import 'carbon-components-svelte/css/g80.css';
+
   import './styles/global.scss';
   import './styles/scale.scss';
   import './styles/scroll.scss';
@@ -7,7 +9,10 @@
 
   import Login from './Login.svelte';
   import Home from './Home.svelte';
+  import MainQuestions from './MainQuestions.svelte';
+  import BonusQuestions from './BonusQuestions.svelte';
   import { upgrade } from './client';
+  import EditQuestion from './EditQuestion.svelte';
 
   export let url;
   let isLoaded = false;
@@ -30,6 +35,13 @@
       <main>
         <Route path="/login" component={Login} />
         <Route path="/" component={Home} />
+
+        <Route path="/main-questions" component={MainQuestions} />
+        <Route path="/bonus-questions" component={BonusQuestions} />
+
+        <Route path="/question/edit/:id" let:params>
+          <EditQuestion questionId={params.id} />
+        </Route>
 
         <Route>
           <p>PAGE NOT FOUND</p>

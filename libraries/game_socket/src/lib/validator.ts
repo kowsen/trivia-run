@@ -55,6 +55,15 @@ export function optional<TValue>(validator: (value: unknown) => TValue): (value:
   };
 }
 
+export function maybeNull<TValue>(validator: (value: unknown) => TValue): (value: unknown) => TValue | null {
+  return (value: unknown) => {
+    if (value === null) {
+      return value;
+    }
+    return validator(value);
+  };
+}
+
 export function arrayOf<TValue>(validator: (value: unknown) => TValue): (value: unknown) => TValue[] {
   return (value: unknown) => {
     if (!(value instanceof Array)) {

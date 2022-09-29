@@ -21,6 +21,13 @@ COPY . .
 RUN npm run build
 RUN rm -rf node_modules && npm i --production --ignore-scripts
 
+# Volume Stage
+# ---
+FROM alpine AS volumes
+WORKDIR /opt/app
+
+RUN mkdir -p /opt/app/files
+
 # Run Stage
 # ---
 FROM gcr.io/distroless/nodejs:16
@@ -29,6 +36,7 @@ USER nobody
 
 COPY --chown=nobody --from=deps-builder /opt/app /opt/node_modules/game-socket
 COPY --chown=nobody --from=builder /opt/app /opt/app
+COPY --chown=nobody --from=volumes /opt/app/files /var/lib/app/files
 WORKDIR /opt/app
 
 ARG NODE_ENV=production

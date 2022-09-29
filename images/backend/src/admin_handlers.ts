@@ -1,7 +1,9 @@
 import { Db } from 'mongodb';
+import fs from 'fs';
 import { v4 as uuid } from 'uuid';
 import { GameServer } from 'game-socket/dist/lib/server.js';
 import { Doc } from 'game-socket/dist/trivia/base.js';
+import unzipper from 'unzipper';
 import {
   getAdminToken,
   upgradeToAdmin,
@@ -24,6 +26,8 @@ import { GAME_ROOM, getTeamRoom, sendInitialData } from './game_handlers';
 import { Server } from 'socket.io';
 
 export const ADMIN_ROOM = 'ADMIN';
+
+const FILES_LOCATION = '/var/lib/app/files';
 
 interface Config {
   _id: string;
@@ -113,7 +117,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
     await questionsCollection(db).replaceOne({ _id: question._id }, question, { upsert: true });
     server.to(ADMIN_ROOM).emit('action', updateAdminState({ questions: [question] }));
     await refreshAllTeams(db, server);
-    return { success: true };
+    return { success: true, questionId: question._id };
   });
 
   registerProtected(upsertTeam, async (params, socket, db, server) => {
@@ -162,7 +166,20 @@ export function setupAdminHandlers(server: GameServer<Db>) {
   });
 
   registerProtected(uploadFile, async (params, socket, db, server) => {
-    console.log('RECEIVED FILE OF LENGTH: ', params.base64.length);
-    return { success: true, path: 'test_path' };
+    const [header, data] = params.base64.split(';base64,');
+    const extension = header.slice(header.indexOf('/') + 1);
+    const fileId = uuid();
+    if (extension === 'zip') {
+      const buf = Buffer.from(data, 'base64');
+      const zip = await unzipper.Open.buffer(buf);
+      await zip.extract({
+        path: `${FILES_LOCATION}/${fileId}`,
+      });
+      return { success: true, path: fileId };
+    } else {
+      const filePath = `${fileId}.${extension}`;
+      await fs.promises.writeFile(`${FILES_LOCATION}/${filePath}`, data, { encoding: 'base64' });
+      return { success: true, path: filePath };
+    }
   });
 }

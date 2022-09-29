@@ -1,8 +1,12 @@
 import { v4 as uuid } from 'uuid';
 import { RPC } from '../lib/rpc.js';
-import { arrayOf, booleanField, numberField, optional, stringField } from '../lib/validator.js';
+import { arrayOf, booleanField, maybeNull, numberField, optional, stringField } from '../lib/validator.js';
 import { AdminGuess, AdminQuestion, AdminQuestionOrder, AdminTeam } from './admin_state.js';
 import { Doc, RequestDoc, StatusResponse } from './base.js';
+
+export interface UpsertQuestionResponse extends StatusResponse {
+  questionId: string;
+}
 
 export interface AdminTokenRequest {
   password: string;
@@ -52,10 +56,10 @@ export const upgradeToAdmin = new RPC<AdminUpgradeRequest, StatusResponse>(
 const requestDocValidator = {
   _id: optional(stringField),
   _modified: optional(numberField),
-  _deleted: optional(booleanField),
+  _deleted: optional(maybeNull(booleanField)),
 };
 
-export const upsertQuestion = new RPC<RequestDoc<AdminQuestion>, StatusResponse>(
+export const upsertQuestion = new RPC<RequestDoc<AdminQuestion>, UpsertQuestionResponse>(
   'upsertQuestion',
   {
     ...requestDocValidator,
@@ -69,6 +73,7 @@ export const upsertQuestion = new RPC<RequestDoc<AdminQuestion>, StatusResponse>
     bonusWinner: optional(stringField),
   },
   {
+    questionId: stringField,
     success: booleanField,
   },
 );
