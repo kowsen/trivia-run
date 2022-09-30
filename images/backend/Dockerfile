@@ -32,11 +32,8 @@ RUN mkdir -p /opt/app/files
 # ---
 FROM gcr.io/distroless/nodejs:16
 
-USER nobody
-
-COPY --chown=nobody --from=deps-builder /opt/app /opt/node_modules/game-socket
-COPY --chown=nobody --from=builder /opt/app /opt/app
-COPY --chown=nobody --from=volumes /opt/app/files /var/lib/app/files
+COPY --from=deps-builder /opt/app /opt/node_modules/game-socket
+COPY --from=builder /opt/app /opt/app
 WORKDIR /opt/app
 
 ARG NODE_ENV=production

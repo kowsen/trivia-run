@@ -16,7 +16,9 @@
   }
 
   async function loginAndRedirect() {
+    console.log('a');
     const result = await refreshToken(password);
+    console.log('b');
     if (!result.success) {
       password = '';
       errorText = 'Invalid, try again...';

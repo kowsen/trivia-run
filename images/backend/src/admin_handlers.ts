@@ -21,13 +21,12 @@ import {
   updateAdminState,
   AdminQuestionOrder,
 } from 'game-socket/dist/trivia/admin_state.js';
-import { updateGameState } from 'game-socket/dist/trivia/game_state.js';
-import { checkAndFixTeam, GAME_ROOM, getTeamRoom, sendInitialData } from './game_handlers';
+import { checkAndFixTeam, GAME_ROOM, getTeamRoom, sendInitialData } from './game_handlers.js';
 import { Server } from 'socket.io';
 
 export const ADMIN_ROOM = 'ADMIN';
 
-const FILES_LOCATION = '/var/lib/app/files';
+const FILES_LOCATION = '/opt/app/files';
 
 interface Config {
   _id: string;

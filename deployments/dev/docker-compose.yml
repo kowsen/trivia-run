@@ -2,18 +2,36 @@ version: "3.8"
 
 services:
   static:
-    extends:
-      file: ../../images/static/deployments/dev/docker-compose.yml
-      service: static
+    image: nginx
+    volumes:
+      - ../../dev_volumes/files:/usr/share/nginx/html
+    ports:
+      - "8080:80"
   mongo:
-    extends:
-      file: ../../images/backend/deployments/dev/docker-compose.yml
-      service: mongo
+    image: mongo
+    restart: always
+    volumes:
+      - ../../dev_volumes/database:/data/db
   backend:
-    extends:
-      file: ../../images/backend/deployments/dev/docker-compose.yml
-      service: backend
+    image: node:16.14.2
+    working_dir: /opt/app
+    volumes:
+      - ../../images/backend:/opt/app
+      - ../../images/backend/node_modules:/opt/app/node_modules
+      - ../../images/backend/dist:/opt/app/dist
+      - ../../libraries/game_socket:/opt/node_modules/game-socket
+      - ../../dev_volumes/files:/opt/app/files
+    command: bash -c "npm i --quiet --ignore-scripts && npm run start:dev"
+    ports:
+      - '8082:80'
   admin_panel:
-    extends:
-      file: ../../images/admin_panel/deployments/dev/docker-compose.yml
-      service: admin_panel
+    image: node:16.14.2
+    working_dir: /opt/app
+    volumes:
+      - ../../images/admin_panel:/opt/app
+      - ../../images/admin_panel/node_modules:/opt/app/node_modules
+      - ../../images/admin_panel/dist:/opt/app/dist
+      - ../../libraries/game_socket:/opt/node_modules/game-socket
+    command: bash -c "npm i --quiet --ignore-scripts && npm run dev"
+    ports:
+      - "8083:80"

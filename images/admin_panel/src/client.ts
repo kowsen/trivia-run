@@ -15,13 +15,19 @@ export async function refreshToken(password: string): Promise<StatusResponse> {
 
 export async function upgrade(): Promise<StatusResponse> {
   const token = localStorage.getItem('token');
+  console.log(token);
   if (!token) {
     navigate('/login');
     return { success: false };
   }
 
   const response = await client.call(upgradeToAdmin, { token });
-  if (!response.success) {
+  console.log(response);
+  if (response.success) {
+    if (window.location.pathname === '/login') {
+      navigate('/');
+    }
+  } else {
     navigate('/login');
   }
   return response;
