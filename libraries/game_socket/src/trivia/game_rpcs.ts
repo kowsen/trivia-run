@@ -1,6 +1,6 @@
-import { RPC } from '../lib/rpc';
-import { stringField, booleanField, numberField, arrayOf, validate, optional } from '../lib/validator';
-import { StatusResponse } from './base';
+import { RPC } from '../lib/rpc.js';
+import { stringField, booleanField, numberField, arrayOf, validate, optional } from '../lib/validator.js';
+import { StatusResponse } from './base.js';
 
 export interface GameRankingTeam {
   name: string;

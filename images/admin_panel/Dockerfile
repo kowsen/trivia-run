@@ -24,4 +24,5 @@ RUN npm run build
 # ---
 FROM nginx
 
+COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=builder /opt/app/dist /usr/share/nginx/html

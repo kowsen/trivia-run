@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FileUploader } from 'carbon-components-svelte';
+  import { Button, FileUploader } from 'carbon-components-svelte';
   import { uploadFile } from 'game-socket/dist/trivia/admin_rpcs';
   import { client } from './client';
 
@@ -51,6 +51,12 @@
     {:else}
       <iframe class="preview" src={`${STATIC_URL}/${value}/index.html`} title="preview" />
     {/if}
+    <Button
+      kind="danger"
+      on:click={() => {
+        value = '';
+      }}>Remove</Button
+    >
   {/if}
 </div>
 
