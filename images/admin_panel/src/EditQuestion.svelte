@@ -12,7 +12,7 @@
 
   $: question = $client.questions.entities[questionId];
   $: isBonus = $order.bonus.includes(questionId);
-  $: headerLink = isBonus ? '/bonus-questions' : '/main-questions';
+  $: headerLink = isBonus ? '/admin/bonus-questions' : '/admin/main-questions';
 
   function stripFalsy<TValue>(value: TValue): TValue | undefined {
     if (!value) {

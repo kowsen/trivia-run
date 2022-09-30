@@ -13,14 +13,9 @@ async function main() {
   await tokensCollection(db).createIndex({ _modified: 1 }, { expireAfterSeconds: 60 * 24 });
 
   const server = new GameServer<Db>({
+    socketOptions: { path: '/api/socket.io' },
     port: 80,
     dataAdapter: db,
-    socketOptions: {
-      cors: {
-        origin: 'http://localhost:8083',
-        methods: ['GET', 'POST'],
-      },
-    },
   });
 
   setupAdminHandlers(server);

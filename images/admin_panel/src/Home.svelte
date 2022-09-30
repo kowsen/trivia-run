@@ -3,7 +3,7 @@
 </script>
 
 <main>
-  <Link to="/main-questions">Main Questions</Link>
-  <Link to="/bonus-questions">Bonus Questions</Link>
-  <Link to="/teams">Teams</Link>
+  <Link to="/admin/main-questions">Main Questions</Link>
+  <Link to="/admin/bonus-questions">Bonus Questions</Link>
+  <Link to="/admin/teams">Teams</Link>
 </main>

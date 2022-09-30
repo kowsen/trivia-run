@@ -1,5 +1,5 @@
 import { Action, BaseAction } from 'redux-actions';
-import io, { Socket } from 'socket.io-client';
+import io, { ManagerOptions, Socket, SocketOptions } from 'socket.io-client';
 import { RPC, rpcResponseValidator } from './rpc.js';
 import { stringField, unknownField, validate } from './validator.js';
 
@@ -24,10 +24,11 @@ export class GameClient<TGameState> {
   constructor(
     path: string,
     reducer: (prevState: TGameState | undefined, action: Action<unknown> | BaseAction) => TGameState,
+    options: Partial<ManagerOptions & SocketOptions> = {},
   ) {
     this.state = reducer(undefined, { type: 'INITIALIZE_REDUCER_ACTION' });
 
-    this.client = io(path);
+    this.client = io(path, options);
 
     this.client.on('rpc', (value: unknown) => {
       if (validate(value, rpcResponseValidator)) {
@@ -52,6 +53,10 @@ export class GameClient<TGameState> {
       for (const listener of this.stateListeners) {
         listener(this.state);
       }
+    });
+
+    this.client.on('connected', () => {
+      console.log('CONNECTED');
     });
   }
 

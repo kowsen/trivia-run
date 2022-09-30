@@ -6,7 +6,7 @@ services:
     volumes:
       - ../../dev_volumes/files:/usr/share/nginx/html
     ports:
-      - "8080:80"
+      - "8081:80"
   mongo:
     image: mongo
     restart: always
@@ -35,3 +35,8 @@ services:
     command: bash -c "npm i --quiet --ignore-scripts && npm run dev"
     ports:
       - "8083:80"
+  proxy:
+    build: ../../images/proxy/dev
+    ports:
+      - "8080:80"
+    restart: always

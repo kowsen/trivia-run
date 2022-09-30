@@ -21,7 +21,7 @@
     {
       text: 'Guess Feed',
       action: () => {
-        navigate(`/question/feed/${question._id}`);
+        navigate(`/admin/question/feed/${question._id}`);
       },
     },
     {
@@ -33,7 +33,7 @@
     {
       text: 'Edit',
       action: () => {
-        navigate(`/question/edit/${question._id}`);
+        navigate(`/admin/question/edit/${question._id}`);
       },
     },
     {

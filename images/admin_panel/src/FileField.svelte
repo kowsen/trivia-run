@@ -3,7 +3,7 @@
   import { uploadFile } from 'game-socket/dist/trivia/admin_rpcs';
   import { client } from './client';
 
-  const STATIC_URL = 'http://localhost:8080';
+  const STATIC_URL = '/static';
 
   export let kind: 'image' | 'bundle';
   export let value: string;

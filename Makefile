@@ -23,7 +23,11 @@ clean-dev: ## Clean Docker Compose local development environment.
 up-prod: ## Run a local prod environment with Docker Compose.
 	@images/admin_panel/copy_deps.sh
 	@images/backend/copy_deps.sh
-	@docker compose -f ./deployments/prod/docker-compose.yml up --build --force-recreate
+	@docker compose -f ./deployments/prod/docker-compose.yml up -d --build --force-recreate
+	docker image prune -f
+
+stop-prod:
+	@docker compose -f ./deployments/prod/docker-compose.yml stop
 
 recreate-prod: ## Recreate and run prod docker compose
 	@docker compose -f ./deployments/prod/docker-compose.yml up --build --force-recreate

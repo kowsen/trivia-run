@@ -14,13 +14,13 @@
     {
       text: 'Guess Feed',
       action: () => {
-        navigate(`/team/feed/${team._id}`);
+        navigate(`/admin/team/feed/${team._id}`);
       },
     },
     {
       text: 'Edit',
       action: () => {
-        navigate(`/team/edit/${team._id}`);
+        navigate(`/admin/team/edit/${team._id}`);
       },
     },
     {

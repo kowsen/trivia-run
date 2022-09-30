@@ -35,19 +35,19 @@
   <div class="content">
     <Router {url}>
       <main>
-        <Route path="/login" component={Login} />
-        <Route path="/" component={Home} />
+        <Route path="/admin/login" component={Login} />
+        <Route path="/admin" component={Home} />
 
-        <Route path="/main-questions" component={MainQuestions} />
-        <Route path="/bonus-questions" component={BonusQuestions} />
+        <Route path="/admin/main-questions" component={MainQuestions} />
+        <Route path="/admin/bonus-questions" component={BonusQuestions} />
 
-        <Route path="/teams" component={Teams} />
+        <Route path="/admin/teams" component={Teams} />
 
-        <Route path="/question/edit/:id" let:params>
+        <Route path="/admin/question/edit/:id" let:params>
           <EditQuestion questionId={params.id} />
         </Route>
 
-        <Route path="/team/edit/:id" let:params>
+        <Route path="/admin/team/edit/:id" let:params>
           <EditTeam teamId={params.id} />
         </Route>
 

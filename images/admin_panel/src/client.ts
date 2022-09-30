@@ -5,7 +5,8 @@ import type { RequestDoc, StatusResponse } from 'game-socket/dist/trivia/base';
 import { navigate } from 'svelte-routing';
 import { derived } from 'svelte/store';
 
-export const client = new GameClient('ws://localhost:8082', adminReducer);
+console.log(`ws://${window.location.host}/api`);
+export const client = new GameClient(`ws://${window.location.host}/api`, adminReducer, { path: '/admin/socket.io' });
 
 export async function refreshToken(password: string): Promise<StatusResponse> {
   const response = await client.call(getAdminToken, { password });
@@ -17,7 +18,7 @@ export async function upgrade(): Promise<StatusResponse> {
   const token = localStorage.getItem('token');
   console.log(token);
   if (!token) {
-    navigate('/login');
+    navigate('/admin/login');
     return { success: false };
   }
 
@@ -25,10 +26,10 @@ export async function upgrade(): Promise<StatusResponse> {
   console.log(response);
   if (response.success) {
     if (window.location.pathname === '/login') {
-      navigate('/');
+      navigate('/admin');
     }
   } else {
-    navigate('/login');
+    navigate('/admin/login');
   }
   return response;
 }

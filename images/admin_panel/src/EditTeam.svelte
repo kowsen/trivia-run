@@ -53,11 +53,11 @@
 
   async function submit() {
     await client.call(upsertTeam, generatedTeam);
-    navigate('/teams');
+    navigate('/admin/teams');
   }
 </script>
 
-<Header to="/teams">Edit Team</Header>
+<Header to="/admin/teams">Edit Team</Header>
 
 <div class="edit-form">
   <p>Token: {team.token}</p>
