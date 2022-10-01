@@ -30,6 +30,9 @@ export interface AdminStateUpdate {
 }
 
 export function checkGuess(guess: string, answer: string): boolean {
+  if (!answer) {
+    return false;
+  }
   guess = guess.replace(/\s+/g, '');
   const answerRegex = new RegExp(answer, 'i');
   return !!guess.match(answerRegex) || !!guess.replace(/[^a-z0-9]/gi, '').match(answerRegex);
