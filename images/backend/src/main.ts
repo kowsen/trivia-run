@@ -11,11 +11,17 @@ import https from 'https';
 
 function getServer(app: Express) {
   if (process.env.HTTPS) {
-    const options = {
-      key: fs.readFileSync('/opt/app/.deps/keys/fullchain.pem'),
-      cert: fs.readFileSync('/opt/app/.deps/keys/privkey.pem'),
-    };
-    return https.createServer(options, app);
+    const privateKey = fs.readFileSync('/opt/app/.deps/keys/privkey.pem', 'utf8');
+    const certificate = fs.readFileSync('/opt/app/.deps/keys/cert.pem', 'utf8');
+    const ca = fs.readFileSync('/opt/app/.deps/keys/chain.pem', 'utf8');
+    return https.createServer(
+      {
+        key: privateKey,
+        cert: certificate,
+        ca: ca,
+      },
+      app,
+    );
   } else {
     return http.createServer(app);
   }
