@@ -25,6 +25,11 @@ up-prod: ## Run a local prod environment with Docker Compose.
 	@docker compose -f ./deployments/prod/docker-compose.yml up -d --build --force-recreate
 	docker image prune -f
 
+up-prod-sync: ## Run a local prod environment with Docker Compose.
+	@cp -r /etc/letsencrypt/live/trivia.run ./images/backend/.deps/keys
+	@docker compose -f ./deployments/prod/docker-compose.yml up --build --force-recreate
+	docker image prune -f
+
 stop-prod:
 	@docker compose -f ./deployments/prod/docker-compose.yml stop
 
