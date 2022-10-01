@@ -59,25 +59,42 @@ export async function checkAndFixTeam(team: AdminTeam, db: Db, server: Server): 
 
 export async function sendInitialData(team: AdminTeam, db: Db, broadcast: SocketOrChannel) {
   const order = await getOrder(db);
-  const questions = (
+
+  const mainQuestions = (await questionsCollection(db).find({ _id: team.mainQuestionId }).toArray()).map(question =>
+    addOrderToQuestion(question, order),
+  );
+
+  const bonusQuestions = (
     await questionsCollection(db)
-      .find({ $or: [{ _id: team.mainQuestionId }, { bonusIndex: { $exists: true } }] })
+      .find({ bonusIndex: { $exists: true } })
       .toArray()
   ).map(question => addOrderToQuestion(question, order));
+
   const guesses = (
     await Promise.all(
-      questions.map(question =>
-        guessesCollection(db)
-          .find({ teamId: team._id, questionId: question._id }, { limit: 5 })
-          .sort('_modified', -1)
-          .toArray(),
-      ),
+      bonusQuestions
+        .map(question =>
+          guessesCollection(db)
+            .find({ teamId: team._id, questionId: question._id }, { limit: 5 })
+            .sort('_modified', -1)
+            .toArray(),
+        )
+        .concat([
+          guessesCollection(db)
+            .find(
+              { teamId: team._id, questionId: { $nin: bonusQuestions.map(question => question._id) } },
+              { limit: 5 },
+            )
+            .sort('_modified', -1)
+            .toArray(),
+        ]),
     )
   ).flat();
+
   broadcast.emit(
     'action',
     updateGameState({
-      questions,
+      questions: [...mainQuestions, ...bonusQuestions],
       teams: await teamsCollection(db).find({ _id: team._id }).toArray(),
       guesses,
     }),
