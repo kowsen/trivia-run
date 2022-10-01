@@ -12,8 +12,8 @@ import https from 'https';
 function getServer(app: Express) {
   if (process.env.HTTPS) {
     const options = {
-      key: fs.readFileSync('/var/keys/fullchain.pem'),
-      cert: fs.readFileSync('/var/keys/privkey.pem'),
+      key: fs.readFileSync('/opt/app/keys/fullchain.pem'),
+      cert: fs.readFileSync('/opt/app/keys/privkey.pem'),
     };
     return https.createServer(options, app);
   } else {
