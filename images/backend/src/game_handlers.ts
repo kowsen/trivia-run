@@ -213,7 +213,7 @@ export function setupGameHandlers(server: GameServer<Db>) {
   });
 
   server.register(createTeam, async (params, socket, db, server) => {
-    const teamName = params.name.substring(16);
+    const teamName = params.name.substring(0, 16);
     if (await teamsCollection(db).findOne({ name: teamName })) {
       return { failureReason: 'Team Name already exists.' };
     }
