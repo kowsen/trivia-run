@@ -40,7 +40,7 @@ async function main() {
 
   const db = client.db('trivia');
 
-  await tokensCollection(db).createIndex({ _modified: 1 }, { expireAfterSeconds: 60 * 24 });
+  await tokensCollection(db).createIndex({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 });
 
   const server = new GameServer<Db>({
     http: httpServer,

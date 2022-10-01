@@ -35,6 +35,11 @@ interface Config {
 
 const DEFAULT_CONFIG: Config = { _id: 'SERVER_CONFIG', adminPassword: 'password' };
 
+interface Token {
+  _id: string;
+  createdAt: Date;
+}
+
 export function buildDoc(params: Partial<Doc>): Doc {
   return {
     _id: params._id ?? uuid(),
@@ -45,7 +50,7 @@ export function buildDoc(params: Partial<Doc>): Doc {
 
 const DEFAULT_ORDER: AdminQuestionOrder = { ...buildDoc({}), _id: 'QUESTION_ORDER', main: [], bonus: [] };
 
-export const tokensCollection = (db: Db) => db.collection<Doc>('tokens');
+export const tokensCollection = (db: Db) => db.collection<Token>('tokens');
 
 export const questionsCollection = (db: Db) => db.collection<AdminQuestion>('questions');
 
@@ -74,7 +79,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
     const success = params.password === config.adminPassword;
     let token = '';
     if (success) {
-      const tokenDoc = buildDoc({});
+      const tokenDoc = { _id: uuid(), createdAt: new Date() };
       await tokensCollection(db).insertOne(tokenDoc);
       token = tokenDoc._id;
     }
