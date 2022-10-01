@@ -1,12 +1,6 @@
 version: "3.8"
 
 services:
-  static:
-    image: nginx
-    volumes:
-      - ../../dev_volumes/files:/usr/share/nginx/html
-    ports:
-      - "8081:80"
   mongo:
     image: mongo
     restart: always
@@ -19,24 +13,7 @@ services:
       - ../../images/backend:/opt/app
       - ../../images/backend/node_modules:/opt/app/node_modules
       - ../../images/backend/dist:/opt/app/dist
-      - ../../libraries/game_socket:/opt/node_modules/game-socket
       - ../../dev_volumes/files:/opt/app/files
     command: bash -c "npm i --quiet --ignore-scripts && npm run start:dev"
     ports:
       - '8082:80'
-  admin_panel:
-    image: node:16.14.2
-    working_dir: /opt/app
-    volumes:
-      - ../../images/admin_panel:/opt/app
-      - ../../images/admin_panel/node_modules:/opt/app/node_modules
-      - ../../images/admin_panel/dist:/opt/app/dist
-      - ../../libraries/game_socket:/opt/node_modules/game-socket
-    command: bash -c "npm i --quiet --ignore-scripts && npm run dev"
-    ports:
-      - "8083:80"
-  proxy:
-    build: ../../images/proxy/dev
-    ports:
-      - "8080:80"
-    restart: always

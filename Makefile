@@ -21,8 +21,7 @@ clean-dev: ## Clean Docker Compose local development environment.
 	@docker compose -f ./deployments/dev/docker-compose.yml down --remove-orphans --volumes
 
 up-prod: ## Run a local prod environment with Docker Compose.
-	@images/admin_panel/copy_deps.sh
-	@images/backend/copy_deps.sh
+	@cp -r /etc/letsencrypt/live/trivia.run ./images/backend/.deps/keys
 	@docker compose -f ./deployments/prod/docker-compose.yml up -d --build --force-recreate
 	docker image prune -f
 

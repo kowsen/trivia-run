@@ -1,8 +1,8 @@
 import { Db } from 'mongodb';
 import fs from 'fs';
 import { v4 as uuid } from 'uuid';
-import { GameServer } from 'game-socket/dist/lib/server.js';
-import { Doc } from 'game-socket/dist/trivia/base.js';
+import { GameServer } from './socket/lib/server.js';
+import { Doc } from './socket/trivia/base.js';
 import unzipper from 'unzipper';
 import {
   getAdminToken,
@@ -13,14 +13,14 @@ import {
   setQuestionOrder,
   setAdminPassword,
   uploadFile,
-} from 'game-socket/dist/trivia/admin_rpcs.js';
+} from './socket/trivia/admin_rpcs.js';
 import {
   AdminQuestion,
   AdminTeam,
   AdminGuess,
   updateAdminState,
   AdminQuestionOrder,
-} from 'game-socket/dist/trivia/admin_state.js';
+} from './socket/trivia/admin_state.js';
 import { checkAndFixTeam, GAME_ROOM, getTeamRoom, sendInitialData } from './game_handlers.js';
 import { Server } from 'socket.io';
 

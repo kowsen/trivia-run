@@ -13,7 +13,9 @@
     "format:check": "prettier \"./**\" --ignore-unknown --check"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^1.8.5",
     "adm-zip": "^0.5.9",
+    "cors": "^2.8.5",
     "dotenv": "^16.0.0",
     "express": "^4.18.1",
     "express-basic-auth": "^1.2.1",

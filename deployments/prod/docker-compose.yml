@@ -1,12 +1,6 @@
 version: "3.8"
 
 services:
-  static:
-    image: nginx
-    volumes:
-      - files:/usr/share/nginx/html
-    ports:
-      - "8080:80"
   mongo:
     image: mongo
     restart: always
@@ -18,10 +12,8 @@ services:
       - '8082:80'
     volumes:
       - files:/opt/app/files
-  admin_panel:
-    build: ../../images/admin_panel
-    ports:
-      - "8083:80"
+    environment:
+      - HTTPS=1
 
 volumes:
   files:

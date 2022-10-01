@@ -1,15 +1,8 @@
-import { GameServer } from 'game-socket/dist/lib/server.js';
+import { GameServer } from './socket/lib/server.js';
 import { Db } from 'mongodb';
 import { BroadcastOperator, Server, Socket } from 'socket.io';
-import { updateGameState, addOrderToQuestion } from 'game-socket/dist/trivia/game_state.js';
-import {
-  upgradeToGame,
-  guess,
-  getRanking,
-  createTeam,
-  getInvite,
-  GameRankingTeam,
-} from 'game-socket/dist/trivia/game_rpcs.js';
+import { updateGameState, addOrderToQuestion } from './socket/trivia/game_state.js';
+import { upgradeToGame, guess, getRanking, createTeam, getInvite, GameRankingTeam } from './socket/trivia/game_rpcs.js';
 import {
   ADMIN_ROOM,
   buildDoc,
@@ -25,8 +18,8 @@ import {
   updateAdminState,
   AdminStateUpdate,
   checkGuess,
-} from 'game-socket/dist/trivia/admin_state.js';
-import { generateToken } from 'game-socket/dist/trivia/base.js';
+} from './socket/trivia/admin_state.js';
+import { generateToken } from './socket/trivia/base.js';
 
 const BASE_FILTER = { _deleted: { $ne: true } };
 

@@ -1,10 +1,11 @@
 import { Server, ServerOptions, Socket } from 'socket.io';
+import { Server as HttpServer } from 'http';
 import { RPC, rpcCallValidator } from './rpc.js';
 import { validate } from './validator.js';
 
 export interface GameServerConfig<TDataAdapter> {
+  http: HttpServer;
   socketOptions?: Partial<ServerOptions>;
-  port: number;
   dataAdapter: TDataAdapter;
 }
 
@@ -13,7 +14,7 @@ export class GameServer<TDataAdapter> {
   private readonly server: Server;
 
   constructor(private readonly config: GameServerConfig<TDataAdapter>) {
-    this.server = new Server(config.socketOptions);
+    this.server = new Server(config.http, config.socketOptions);
 
     this.server.on('connection', socket => {
       socket.on('rpc', async (rpcCall: unknown) => {
@@ -31,8 +32,6 @@ export class GameServer<TDataAdapter> {
         await handler(rpcCall, socket);
       });
     });
-
-    this.server.listen(config.port);
   }
 
   public register<TParams extends object, TResult extends object>(
