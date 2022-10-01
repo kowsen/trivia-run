@@ -13,7 +13,7 @@ RUN rm -rf node_modules && npm i --production --ignore-scripts
 # ---
 FROM gcr.io/distroless/nodejs:16
 
-COPY deps/keys /ver/keys
+COPY .deps/keys /var/keys
 
 COPY --from=builder /opt/app /opt/app
 WORKDIR /opt/app
