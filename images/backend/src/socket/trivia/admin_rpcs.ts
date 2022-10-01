@@ -21,7 +21,7 @@ export interface AdminUpgradeRequest {
 }
 
 export interface PasswordChange {
-  password: string;
+  adminPassword: string;
 }
 
 export interface FileUpload {
@@ -123,7 +123,7 @@ export const setQuestionOrder = new RPC<RequestDoc<AdminQuestionOrder>, StatusRe
 export const setAdminPassword = new RPC<PasswordChange, StatusResponse>(
   'setAdminPassword',
   {
-    password: stringField,
+    adminPassword: stringField,
   },
   {
     success: booleanField,
