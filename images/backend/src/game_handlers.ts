@@ -218,8 +218,8 @@ export function setupGameHandlers(server: GameServer<Db>) {
       return { failureReason: 'Team Name already exists.' };
     }
 
-    const firstQuestion = await questionsCollection(db).findOne({ mainIndex: 0 });
-    if (!firstQuestion) {
+    const firstQuestionId = (await getOrder(db)).main[0];
+    if (!firstQuestionId) {
       return { failureReason: 'Internal error, try again.' };
     }
 
@@ -227,7 +227,7 @@ export function setupGameHandlers(server: GameServer<Db>) {
       name: teamName,
       token: generateToken(6),
       completedBonusQuestions: [],
-      mainQuestionId: firstQuestion._id,
+      mainQuestionId: firstQuestionId,
       ...buildDoc({}),
     };
 
