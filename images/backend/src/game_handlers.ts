@@ -131,7 +131,7 @@ export function setupGameHandlers(server: GameServer<Db>) {
       throw new Error(`Failed to find a question with id: ${params.questionId}`);
     }
 
-    const text = params.text.slice(0, 32);
+    const text = params.text.slice(0, 64);
 
     const isCorrect = checkGuess(text, question.answer);
 
@@ -229,8 +229,9 @@ export function setupGameHandlers(server: GameServer<Db>) {
   });
 
   server.register(createTeam, async (params, socket, db, server) => {
-    const teamName = params.name.slice(0, 16);
-    if (await teamsCollection(db).findOne({ name: teamName })) {
+    const teamName = params.name.slice(0, 24);
+    const teamNames = (await teamsCollection(db).find({}).toArray()).map(team => team.name.toLowerCase());
+    if (teamNames.includes(teamName.toLowerCase())) {
       return { failureReason: 'Team Name already exists.' };
     }
 
