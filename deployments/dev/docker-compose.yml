@@ -1,6 +1,10 @@
 version: "3.8"
 
 services:
+  static:
+    image: nginx
+    volumes:
+      - ../../dev_volumes/files:/usr/share/nginx/html
   mongo:
     image: mongo
     restart: always
@@ -13,7 +17,11 @@ services:
       - ../../images/backend:/opt/app
       - ../../images/backend/node_modules:/opt/app/node_modules
       - ../../images/backend/dist:/opt/app/dist
-      - ../../dev_volumes/files:/opt/app/files
+      - ../../dev_volumes/files:/opt/files
     command: bash -c "npm i --quiet --ignore-scripts && npm run start:dev"
+  proxy:
+    build: ../../images/proxy
     ports:
-      - '8082:80'
+      - "8080:80"
+    restart: always
+  

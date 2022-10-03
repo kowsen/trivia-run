@@ -1,6 +1,10 @@
 version: "3.8"
 
 services:
+  static:
+    image: nginx
+    volumes:
+      - files:/usr/share/nginx/html
   mongo:
     image: mongo
     restart: always
@@ -8,12 +12,15 @@ services:
       - database:/data/db
   backend:
     build: ../../images/backend
-    ports:
-      - '443:80'
     volumes:
-      - files:/opt/app/files
+      - files:/opt/files
     environment:
       - HTTPS=1
+  proxy:
+    build: ../../images/proxy
+    ports:
+      - "443:80"
+    restart: always
 
 volumes:
   files:

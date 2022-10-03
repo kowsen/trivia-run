@@ -2,37 +2,28 @@ import { MongoClient, Db } from 'mongodb';
 import { GameServer } from './socket/lib/server.js';
 import { setupAdminHandlers, tokensCollection } from './admin_handlers.js';
 import { setupGameHandlers } from './game_handlers.js';
-import express, { Express } from 'express';
 import http from 'http';
-import cors from 'cors';
 import process from 'process';
 import fs from 'fs';
 import https from 'https';
 
-function getServer(app: Express) {
+function getServer() {
   if (process.env.HTTPS) {
     const privateKey = fs.readFileSync('/opt/app/.deps/keys/privkey.pem', 'utf8');
     const certificate = fs.readFileSync('/opt/app/.deps/keys/cert.pem', 'utf8');
     const ca = fs.readFileSync('/opt/app/.deps/keys/chain.pem', 'utf8');
-    return https.createServer(
-      {
-        key: privateKey,
-        cert: certificate,
-        ca: ca,
-      },
-      app,
-    );
+    return https.createServer({
+      key: privateKey,
+      cert: certificate,
+      ca: ca,
+    });
   } else {
-    return http.createServer(app);
+    return http.createServer();
   }
 }
 
 async function main() {
-  const app = express();
-  app.use(cors());
-  app.use('/static', express.static('files'));
-
-  const httpServer = getServer(app);
+  const httpServer = getServer();
 
   const client = new MongoClient('mongodb://mongo:27017');
 

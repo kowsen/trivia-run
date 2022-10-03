@@ -26,7 +26,7 @@ import { Server } from 'socket.io';
 
 export const ADMIN_ROOM = 'ADMIN';
 
-const FILES_LOCATION = '/opt/app/files';
+const FILES_LOCATION = '/opt/files';
 
 interface Config {
   _id: string;
