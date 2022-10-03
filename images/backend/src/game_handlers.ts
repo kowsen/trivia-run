@@ -210,7 +210,7 @@ export function setupGameHandlers(server: GameServer<Db>) {
 
     return {
       ranking: teams
-        .filter(team => isYouSecret || !team.isSecretTeam)
+        .filter(team => !team._deleted && (isYouSecret || !team.isSecretTeam))
         .map(team => {
           const rankingTeam: GameRankingTeam = { name: team.name };
           if (team._id === params.teamId) {
