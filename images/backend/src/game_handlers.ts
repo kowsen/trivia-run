@@ -66,7 +66,7 @@ export async function sendInitialData(team: AdminTeam, db: Db, broadcast: Socket
 
   const bonusQuestions = (
     await questionsCollection(db)
-      .find({ questionId: { $in: order.bonus } })
+      .find({ _id: { $in: order.bonus } })
       .toArray()
   ).map(question => addOrderToQuestion(question, order));
 
