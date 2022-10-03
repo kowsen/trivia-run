@@ -22,6 +22,10 @@ export interface GuessRequest {
   text: string;
 }
 
+export interface GuessResponse extends StatusResponse {
+  isCorrect: boolean;
+}
+
 export interface RankingRequest {
   teamId: string;
 }
@@ -58,7 +62,7 @@ export const upgradeToGame = new RPC<GameUpgradeRequest, GameUpgradeResponse>(
   },
 );
 
-export const guess = new RPC<GuessRequest, StatusResponse>(
+export const guess = new RPC<GuessRequest, GuessResponse>(
   'guess',
   {
     teamId: stringField,
@@ -67,6 +71,7 @@ export const guess = new RPC<GuessRequest, StatusResponse>(
   },
   {
     success: booleanField,
+    isCorrect: booleanField,
   },
 );
 

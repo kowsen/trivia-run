@@ -190,7 +190,7 @@ export function setupGameHandlers(server: GameServer<Db>) {
     server.to(ADMIN_ROOM).emit('action', updateAdminState({ guesses: [guess] }));
     server.to(getTeamRoom(team._id)).emit('action', updateGameState({ guesses: [guess] }));
 
-    return { success: true };
+    return { success: true, isCorrect };
   });
 
   server.register(getRanking, async (params, socket, db, server) => {
