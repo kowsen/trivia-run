@@ -18,7 +18,7 @@ export interface GameUpgradeResponse {
 
 export interface GuessRequest {
   teamId: string;
-  questionId: string;
+  questionId?: string;
   text: string;
 }
 
@@ -62,7 +62,7 @@ export const guess = new RPC<GuessRequest, StatusResponse>(
   'guess',
   {
     teamId: stringField,
-    questionId: stringField,
+    questionId: optional(stringField),
     text: stringField,
   },
   {

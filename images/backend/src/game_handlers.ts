@@ -117,13 +117,15 @@ export function setupGameHandlers(server: GameServer<Db>) {
       throw new Error(`Failed to find a team with id: ${params.teamId}`);
     }
 
-    const isMainQuestionGuess = params.questionId === team.mainQuestionId;
+    const order = await getOrder(db);
 
-    const question = isMainQuestionGuess
-      ? await questionsCollection(db).findOne({ _id: params.questionId, ...BASE_FILTER })
-      : await questionsCollection(db).findOne({
-          $and: [{ _id: params.questionId, ...BASE_FILTER }, { bonusIndex: { $exists: true } }],
-        });
+    if (params.questionId && !order.bonus.includes(params.questionId)) {
+      throw new Error(`Failed to find a question with id: ${params.questionId}`);
+    }
+
+    const questionId = params.questionId ?? team.mainQuestionId;
+
+    const question = await questionsCollection(db).findOne({ _id: questionId, ...BASE_FILTER });
 
     if (!question) {
       throw new Error(`Failed to find a question with id: ${params.questionId}`);
@@ -134,9 +136,23 @@ export function setupGameHandlers(server: GameServer<Db>) {
     const isCorrect = checkGuess(text, question.answer);
 
     if (isCorrect) {
-      const order = await getOrder(db);
+      if (order.bonus.includes(questionId)) {
+        if (!question.bonusWinner) {
+          const newQuestion = { ...question, bonusWinner: team.name, ...buildDoc(question) };
+          await questionsCollection(db).replaceOne({ _id: params.questionId }, newQuestion);
+          server.to(ADMIN_ROOM).emit('action', updateAdminState({ questions: [newQuestion] }));
+          server.to(GAME_ROOM).emit('action', updateGameState({ questions: [addOrderToQuestion(newQuestion, order)] }));
+        }
 
-      if (isMainQuestionGuess) {
+        const newTeam = {
+          ...team,
+          completedBonusQuestions: [...team.completedBonusQuestions, question._id],
+          ...buildDoc(team),
+        };
+        await teamsCollection(db).replaceOne({ _id: params.teamId }, newTeam);
+        server.to(ADMIN_ROOM).emit('action', updateAdminState({ teams: [newTeam] }));
+        server.to(getTeamRoom(team._id)).emit('action', updateGameState({ teams: [newTeam] }));
+      } else {
         const currentIndex = order.main.indexOf(question._id);
 
         if (currentIndex === -1) {
@@ -159,33 +175,13 @@ export function setupGameHandlers(server: GameServer<Db>) {
         server
           .to(getTeamRoom(team._id))
           .emit('action', updateGameState({ teams: [newTeam], questions: [addOrderToQuestion(nextQuestion, order)] }));
-      } else {
-        if (!order.bonus.includes(question._id)) {
-          throw new Error(`Question has no bonus index: ${params.questionId}`);
-        }
-
-        if (!question.bonusWinner) {
-          const newQuestion = { ...question, bonusWinner: team.name, ...buildDoc(question) };
-          await questionsCollection(db).replaceOne({ _id: params.questionId }, newQuestion);
-          server.to(ADMIN_ROOM).emit('action', updateAdminState({ questions: [newQuestion] }));
-          server.to(GAME_ROOM).emit('action', updateGameState({ questions: [addOrderToQuestion(newQuestion, order)] }));
-        }
-
-        const newTeam = {
-          ...team,
-          completedBonusQuestions: [...team.completedBonusQuestions, question._id],
-          ...buildDoc(team),
-        };
-        await teamsCollection(db).replaceOne({ _id: params.teamId }, newTeam);
-        server.to(ADMIN_ROOM).emit('action', updateAdminState({ teams: [newTeam] }));
-        server.to(getTeamRoom(team._id)).emit('action', updateGameState({ teams: [newTeam] }));
       }
     }
 
     const guess: AdminGuess = {
       ...buildDoc({}),
       teamId: team._id,
-      questionId: params.questionId,
+      questionId,
       text,
       isCorrect,
     };
