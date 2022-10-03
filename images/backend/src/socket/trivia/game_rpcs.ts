@@ -6,6 +6,7 @@ export interface GameRankingTeam {
   name: string;
   isYou?: boolean;
   isSecretTeam?: boolean;
+  isWinner?: boolean;
 }
 
 export interface GameUpgradeRequest {
@@ -87,6 +88,7 @@ export const getRanking = new RPC<RankingRequest, RankingResponse>(
           name: stringField,
           isYou: optional(booleanField),
           isSecretTeam: optional(booleanField),
+          isWinner: optional(booleanField),
         })
       ) {
         throw new Error('Unable to parse rankings');

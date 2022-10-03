@@ -206,6 +206,8 @@ export function setupGameHandlers(server: GameServer<Db>) {
 
     const isYouSecret = teams.find(team => team._id === params.teamId)?.isSecretTeam;
 
+    const lastQuestion = order.main[order.main.length - 1];
+
     return {
       ranking: teams
         .filter(team => isYouSecret || !team.isSecretTeam)
@@ -217,6 +219,10 @@ export function setupGameHandlers(server: GameServer<Db>) {
           if (team.isSecretTeam) {
             rankingTeam.isSecretTeam = true;
           }
+          if (team.mainQuestionId === lastQuestion) {
+            rankingTeam.isWinner = true;
+          }
+
           return rankingTeam;
         }),
     };
