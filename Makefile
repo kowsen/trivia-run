@@ -21,14 +21,14 @@ clean-dev: ## Clean Docker Compose local development environment.
 	@docker compose -f ./deployments/dev/docker-compose.yml down --remove-orphans --volumes
 
 up-prod: ## Run a local prod environment with Docker Compose.
-	@mkdir -p ./images/backend/.deps/keys
-	@cp -LR /etc/letsencrypt/live/trivia.run/. ./images/backend/.deps/keys
+	@mkdir -p ./images/proxy/prod/.deps/keys
+	@cp -LR /etc/letsencrypt/live/trivia.run/. ./images/proxy/prod/.deps/keys
 	@docker compose -f ./deployments/prod/docker-compose.yml up -d --build --force-recreate
 	docker image prune -f
 
 up-prod-sync: ## Run a local prod environment with Docker Compose.
-	@mkdir -p ./images/backend/.deps/keys
-	@cp -LR /etc/letsencrypt/live/trivia.run/. ./images/backend/.deps/keys
+	@mkdir -p ./images/proxy/prod/.deps/keys
+	@cp -LR /etc/letsencrypt/live/trivia.run/. ./images/proxy/prod/.deps/keys
 	@docker compose -f ./deployments/prod/docker-compose.yml up --build --force-recreate
 	docker image prune -f
 

@@ -20,7 +20,7 @@ services:
       - ../../dev_volumes/files:/opt/files
     command: bash -c "npm i --quiet --ignore-scripts && npm run start:dev"
   proxy:
-    build: ../../images/proxy
+    build: ../../images/proxy/dev
     ports:
       - "8080:80"
     restart: always

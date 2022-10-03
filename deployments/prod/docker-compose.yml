@@ -14,10 +14,8 @@ services:
     build: ../../images/backend
     volumes:
       - files:/opt/files
-    environment:
-      - HTTPS=1
   proxy:
-    build: ../../images/proxy
+    build: ../../images/proxy/prod
     ports:
       - "443:80"
     restart: always
