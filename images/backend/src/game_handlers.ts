@@ -66,7 +66,7 @@ export async function sendInitialData(team: AdminTeam, db: Db, broadcast: Socket
 
   const bonusQuestions = (
     await questionsCollection(db)
-      .find({ bonusIndex: { $exists: true } })
+      .find({ questionId: { $in: order.bonus } })
       .toArray()
   ).map(question => addOrderToQuestion(question, order));
 
@@ -81,10 +81,7 @@ export async function sendInitialData(team: AdminTeam, db: Db, broadcast: Socket
         )
         .concat([
           guessesCollection(db)
-            .find(
-              { teamId: team._id, questionId: { $nin: bonusQuestions.map(question => question._id) } },
-              { limit: 5 },
-            )
+            .find({ teamId: team._id, questionId: { $nin: order.bonus } }, { limit: 5 })
             .sort('_modified', -1)
             .toArray(),
         ]),

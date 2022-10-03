@@ -24,8 +24,8 @@ export interface GameQuestion extends BaseQuestion {
   hideAnswer?: boolean;
   unlockTime?: number;
   bonusWinner?: string;
-  mainIndex: number;
-  bonusIndex: number;
+  mainIndex?: number;
+  bonusIndex?: number;
 }
 
 type AdminQuestionWithOrder = AdminQuestion & GameQuestion;
@@ -44,7 +44,13 @@ const LOCKED_QUESTION_PATCH: Partial<GameQuestion> = {
 };
 
 export function addOrderToQuestion(question: AdminQuestion, order: AdminQuestionOrder): AdminQuestionWithOrder {
-  return { ...question, mainIndex: order.main.indexOf(question._id), bonusIndex: order.bonus.indexOf(question._id) };
+  const mainIndex = order.main.indexOf(question._id);
+  const bonusIndex = order.bonus.indexOf(question._id);
+  return {
+    ...question,
+    mainIndex: mainIndex !== -1 ? mainIndex : undefined,
+    bonusIndex: bonusIndex !== -1 ? bonusIndex : undefined,
+  };
 }
 
 export function stripGameQuestion(
