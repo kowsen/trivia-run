@@ -23,6 +23,7 @@ async function main() {
         origin: '*',
         methods: ['GET', 'POST'],
       },
+      maxHttpBufferSize: 1e7,
     },
   });
 
