@@ -2,7 +2,7 @@ import { Db } from 'mongodb';
 import fs from 'fs';
 import { v4 as uuid } from 'uuid';
 import { GameServer } from './socket/lib/server.js';
-import { Doc } from './socket/trivia/base.js';
+import { Doc, generateToken } from './socket/trivia/base.js';
 import unzipper from 'unzipper';
 import {
   getAdminToken,
@@ -13,6 +13,9 @@ import {
   setQuestionOrder,
   setAdminPassword,
   uploadFile,
+  GameState,
+  setGameState,
+  startForceRefresh,
 } from './socket/trivia/admin_rpcs.js';
 import {
   AdminQuestion,
@@ -20,9 +23,11 @@ import {
   AdminGuess,
   updateAdminState,
   AdminQuestionOrder,
+  AdminGameSettings,
 } from './socket/trivia/admin_state.js';
 import { checkAndFixTeam, GAME_ROOM, getTeamRoom, sendInitialData } from './game_handlers.js';
 import { Server } from 'socket.io';
+import { updateGameState } from './socket/trivia/game_state.js';
 
 export const ADMIN_ROOM = 'ADMIN';
 
@@ -34,6 +39,7 @@ interface Config {
 }
 
 const DEFAULT_CONFIG: Config = { _id: 'SERVER_CONFIG', adminPassword: 'password' };
+const DEFAULT_GAME_SETTINGS = { _id: 'MAIN', state: 'notActive', refreshToken: "A" } as AdminGameSettings;
 
 interface Token {
   _id: string;
@@ -58,8 +64,14 @@ export const teamsCollection = (db: Db) => db.collection<AdminTeam>('teams');
 
 export const guessesCollection = (db: Db) => db.collection<AdminGuess>('guesses');
 
+export const gameSettingsCollection = (db: Db) => db.collection<AdminGameSettings>('gameSettings');
+
 const configCollection = (db: Db) => db.collection<Config>('config');
+
 const CONFIG_FILTER = { _id: DEFAULT_CONFIG._id };
+
+const GAME_SETTINGS_FILTER = { _id: DEFAULT_GAME_SETTINGS._id };
+
 const getConfig = async (db: Db) => (await configCollection(db).findOne(CONFIG_FILTER)) ?? DEFAULT_CONFIG;
 
 const orderCollection = (db: Db) => db.collection<AdminQuestionOrder>('order');
@@ -98,6 +110,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
           teams: await teamsCollection(db).find({}).toArray(),
           guesses: await guessesCollection(db).find({}).toArray(),
           order: await getOrder(db),
+          gameSettings: await gameSettingsCollection(db).find({}).toArray(),
         }),
       );
     }
@@ -155,6 +168,7 @@ export function setupAdminHandlers(server: GameServer<Db>) {
     };
     await orderCollection(db).replaceOne(ORDER_FILTER, order, { upsert: true });
     server.to(ADMIN_ROOM).emit('action', updateAdminState({ order }));
+
     await refreshAllTeams(db, server);
     return { success: true };
   });
@@ -167,6 +181,36 @@ export function setupAdminHandlers(server: GameServer<Db>) {
     };
     await configCollection(db).replaceOne(CONFIG_FILTER, newConfig, { upsert: true });
     await tokensCollection(db).deleteMany({});
+    return { success: true };
+  });
+
+  registerProtected(startForceRefresh, async (params, socket, db, server) => {
+    const curentGameSettings = await gameSettingsCollection(db).findOne(GAME_SETTINGS_FILTER);
+    const newSettings: AdminGameSettings = {
+      ...(curentGameSettings ?? DEFAULT_GAME_SETTINGS),
+      refreshToken: generateToken(5),
+      _modified: Date.now(),
+    };
+    
+    await gameSettingsCollection(db).replaceOne(GAME_SETTINGS_FILTER, newSettings, { upsert: true });
+    
+    server.to(GAME_ROOM).emit('action', updateGameState({ gameSettings: [newSettings] }));
+    server.to(ADMIN_ROOM).emit('action', updateGameState({ gameSettings: [newSettings] }));
+
+    return { success: true };
+  });
+
+  registerProtected(setGameState, async (params, socket, db, server) => {
+    const curentGameSettings = await gameSettingsCollection(db).findOne(GAME_SETTINGS_FILTER);
+    const newSettings: AdminGameSettings = {
+      ...(curentGameSettings ?? DEFAULT_GAME_SETTINGS),
+      state: params.state,
+      _modified: Date.now(),
+    };
+    
+    await gameSettingsCollection(db).replaceOne(GAME_SETTINGS_FILTER, newSettings, { upsert: true });
+    server.to(GAME_ROOM).emit('action', updateGameState({ gameSettings: [newSettings] }));
+    server.to(ADMIN_ROOM).emit('action', updateGameState({ gameSettings: [newSettings] }));
     return { success: true };
   });
 

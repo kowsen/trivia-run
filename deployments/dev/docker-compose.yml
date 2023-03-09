@@ -6,10 +6,12 @@ services:
     volumes:
       - ../../dev_volumes/files:/usr/share/nginx/html
   mongo:
-    image: mongo
+    image: mongo:latest
     restart: always
     volumes:
       - ../../dev_volumes/database:/data/db
+    ports:
+      - "27017:27017"
   backend:
     image: node:16.14.2
     working_dir: /opt/app

@@ -24,6 +24,15 @@ export interface PasswordChange {
   adminPassword: string;
 }
 
+export interface ForceRefresh {
+}
+
+export interface SetGameState {
+  state: GameState
+}
+
+export type GameState = 'notActive' | 'active' | 'completed';
+
 export interface FileUpload {
   base64: string;
 }
@@ -129,6 +138,37 @@ export const setAdminPassword = new RPC<PasswordChange, StatusResponse>(
     success: booleanField,
   },
 );
+
+export const startForceRefresh = new RPC<ForceRefresh, StatusResponse>(
+  'forceRefresh',
+  {
+  },
+  {
+    success: booleanField,
+  },
+);
+
+export const setGameState = new RPC<SetGameState, StatusResponse>(
+  'setGameState',
+  {
+    state: gameStateField,
+  },
+  {
+    success: booleanField,
+  },
+);
+
+
+export function gameStateField(value: unknown): GameState {
+  if (typeof value !== 'string') {
+    throw new Error(`${value} should be a string.`);
+  }
+  var stringValue = value as String;
+  if (stringValue === 'notActive' || stringValue === 'active' || stringValue === 'completed')
+    return stringValue as GameState;
+
+  throw new Error(`${stringValue} should be of type GameState.`);
+}
 
 export const uploadFile = new RPC<FileUpload, FileUploadResponse>(
   'uploadFile',

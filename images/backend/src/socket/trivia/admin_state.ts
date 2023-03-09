@@ -4,7 +4,7 @@ const { combineReducers, createAction, createEntityAdapter, createReducer } = ((
   toolkitRaw) as typeof toolkitRaw;
 
 import { BaseQuestion, Doc } from './base.js';
-import { GameGuess, GameQuestion, GameTeam } from './game_state.js';
+import { GameGuess, GameQuestion, GameSettings, GameTeam } from './game_state.js';
 
 export interface AdminQuestion extends BaseQuestion {
   name?: string;
@@ -22,11 +22,15 @@ export interface AdminQuestionOrder extends Doc {
   bonus: string[];
 }
 
+export interface AdminGameSettings extends GameSettings {
+}
+
 export interface AdminStateUpdate {
   questions?: AdminQuestion[];
   teams?: AdminTeam[];
   guesses?: AdminGuess[];
   order?: AdminQuestionOrder;
+  gameSettings?: AdminGameSettings[];
 }
 
 export function checkGuess(guess: string, answer: string): boolean {
@@ -88,9 +92,20 @@ const orderSlice = createReducer(orderAdapter.getInitialState(), builder => {
   handleUpdateAdminState(builder, orderAdapter, ({ order }) => (order ? [order] : order));
 });
 
+
+const gameSettingsAdapter = createEntityAdapter<AdminGameSettings>({
+  selectId: model => model._id,
+});
+
+const gameSettingsSlice = createReducer(gameSettingsAdapter.getInitialState(), builder => {
+  handleUpdateAdminState(builder, gameSettingsAdapter, ({ gameSettings }) => gameSettings);
+});
+
+
 export const adminReducer = combineReducers({
   questions: questionsSlice,
   teams: teamSlice,
   guesses: guessSlice,
   order: orderSlice,
+  gameSettings: gameSettingsSlice,
 });

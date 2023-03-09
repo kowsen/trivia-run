@@ -1,5 +1,6 @@
 import type { ActionReducerMapBuilder, EntityState, EntityAdapter } from '@reduxjs/toolkit';
 import * as toolkitRaw from '@reduxjs/toolkit';
+import { GameState } from './admin_rpcs.js';
 const { combineReducers, createAction, createEntityAdapter, createReducer } = ((toolkitRaw as any).default ??
   toolkitRaw) as typeof toolkitRaw;
 
@@ -114,6 +115,11 @@ export interface GameGuess extends Doc {
   isCorrect: boolean;
 }
 
+export interface GameSettings extends Doc {
+  state: GameState;
+  refreshToken: string;
+}
+
 const DUMMY_GAME_GUESS: RequestDoc<GameGuess> = {
   questionId: 'DUMMY',
   text: 'DUMMY',
@@ -138,12 +144,14 @@ export interface GameStateUpdateInput {
   questions?: AdminQuestionWithOrder[];
   teams?: AdminTeam[];
   guesses?: AdminGuess[];
+  gameSettings?: GameSettings[];
 }
 
 export interface GameStateUpdate {
   questions?: GameQuestion[];
   teams?: GameTeam[];
   guesses?: GameGuess[];
+  gameSettings?: GameSettings[];
 }
 
 export const updateGameState = createAction('game/update', (payload: GameStateUpdateInput) => {
@@ -152,6 +160,7 @@ export const updateGameState = createAction('game/update', (payload: GameStateUp
       questions: payload.questions?.map(stripGameQuestion),
       teams: payload.teams?.map(stripGameTeam),
       guesses: payload.guesses?.map(stripGameGuess),
+      gameSettings: payload.gameSettings,
     },
   };
 });
@@ -196,8 +205,18 @@ const guessSlice = createReducer(guessAdapter.getInitialState(), builder => {
   handleUpdateGameState(builder, guessAdapter, ({ guesses }) => guesses);
 });
 
+const gameSettingsAdapter = createEntityAdapter<GameSettings>({
+  selectId: model => model._id,
+});
+
+const gameSettingsSlice = createReducer(gameSettingsAdapter.getInitialState(), builder => {
+  handleUpdateGameState(builder, gameSettingsAdapter, ({ gameSettings }) => gameSettings);
+});
+
+
 export const gameReducer = combineReducers({
   questions: questionsSlice,
   teams: teamSlice,
   guesses: guessSlice,
+  gameSettings: gameSettingsSlice,
 });

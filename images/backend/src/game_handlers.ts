@@ -1,7 +1,7 @@
 import { GameServer } from './socket/lib/server.js';
 import { Db } from 'mongodb';
 import { BroadcastOperator, Server, Socket } from 'socket.io';
-import { updateGameState, addOrderToQuestion } from './socket/trivia/game_state.js';
+import { updateGameState, addOrderToQuestion, GameSettings } from './socket/trivia/game_state.js';
 import { upgradeToGame, guess, getRanking, createTeam, getInvite, GameRankingTeam } from './socket/trivia/game_rpcs.js';
 import {
   ADMIN_ROOM,
@@ -35,6 +35,8 @@ export interface GameInvite {
 }
 
 export const invitesCollection = (db: Db) => db.collection<GameInvite>('invites');
+
+export const gameSettingsCollection = (db: Db) => db.collection<GameSettings>('gameSettings');
 
 interface SocketOrChannel {
   emit(ev: string, args: object): boolean;
@@ -94,6 +96,7 @@ export async function sendInitialData(team: AdminTeam, db: Db, broadcast: Socket
       questions: [...mainQuestions, ...bonusQuestions],
       teams: await teamsCollection(db).find({ _id: team._id }).toArray(),
       guesses,
+      gameSettings: await gameSettingsCollection(db).find({}).toArray(),
     }),
   );
 }
