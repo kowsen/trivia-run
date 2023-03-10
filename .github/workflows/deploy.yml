@@ -1,0 +1,13 @@
+name: Deploy to host on merge
+'on':
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  - name: Trigger rebuild
+      uses: fjogeleit/http-request-action@v1
+      with:
+        url: ${{ secrets.DEPLOY_WEBHOOK }}
+        method: 'POST'
