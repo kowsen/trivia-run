@@ -6,7 +6,10 @@ name: Deploy to host on merge
   workflow_dispatch:
 
 jobs:
-  - name: Trigger rebuild
+  deployment:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Trigger rebuild
       uses: fjogeleit/http-request-action@v1
       with:
         url: ${{ secrets.DEPLOY_WEBHOOK }}
